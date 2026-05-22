@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth Models ───
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          Role      @default(USER)
+  shareSlug     String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts          Account[]
+  sessions          Session[]
+  createdQuestions   Question[]
+  questionOverrides  UserQuestionOverride[]
+  createdTopics      Topic[]
+  createdSubTopics   SubTopic[]
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Application Models ───
+
+model Topic {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creator   User?      @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  subTopics SubTopic[]
+  questions QuestionTopic[]
+
+  @@unique([name, createdBy])
+}
+
+model SubTopic {
+  id        String   @id @default(cuid())
+  name      String
+  topicId   String
+  isDefault Boolean  @default(false)
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  creator   User?    @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  questions QuestionSubTopic[]
+
+  @@unique([name, topicId, createdBy])
+}
+
+model Question {
+  id          String     @id @default(cuid())
+  question    String     @db.Text
+  questionVn  String?    @db.Text
+  questionCus String?    @db.Text
+  answer      String?    @db.Text
+  answerVn    String?    @db.Text
+  answerCus   String?    @db.Text
+  difficulty  Difficulty @default(MEDIUM)
+  isDefault   Boolean    @default(false)
+  createdBy   String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  creator   User?                  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  topics    QuestionTopic[]
+  subTopics QuestionSubTopic[]
+  overrides UserQuestionOverride[]
+
+  @@index([isDefault])
+  @@index([createdBy])
+  @@index([difficulty])
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model QuestionTopic {
+  questionId String
+  topicId    String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  topic    Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, topicId])
+}
+
+model QuestionSubTopic {
+  questionId String
+  subTopicId String
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  subTopic SubTopic @relation(fields: [subTopicId], references: [id], onDelete: Cascade)
+
+  @@id([questionId, subTopicId])
+}
+
+model UserQuestionOverride {
+  id          String      @id @default(cuid())
+  userId      String
+  questionId  String
+  question    String?     @db.Text
+  questionVn  String?     @db.Text
+  questionCus String?     @db.Text
+  answer      String?     @db.Text
+  answerVn    String?     @db.Text
+  answerCus   String?     @db.Text
+  difficulty  Difficulty?
+  isHidden    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  originalQuestion Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId])
+}

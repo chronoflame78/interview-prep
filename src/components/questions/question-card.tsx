@@ -17,12 +17,14 @@ interface QuestionCardProps {
   question: QuestionWithRelations;
   onDelete?: (id: string) => void;
   readOnly?: boolean;
+  fontSize?: string;
 }
 
 export function QuestionCard({
   question,
   onDelete,
   readOnly,
+  fontSize = "text-sm",
 }: QuestionCardProps) {
   const [expanded, setExpanded] = useState(false);
   const plainText = stripHtml(question.question);
@@ -46,10 +48,10 @@ export function QuestionCard({
                 </Badge>
               )}
             </div>
-            <p className="text-sm leading-relaxed">
+            <div className={`${fontSize} leading-relaxed`}>
               {expanded ? (
-                <span
-                  className="prose prose-sm dark:prose-invert max-w-none"
+                <div
+                  className="prose dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: question.question }}
                 />
               ) : (
@@ -57,7 +59,7 @@ export function QuestionCard({
                   ? plainText.slice(0, 200) + "..."
                   : plainText
               )}
-            </p>
+            </div>
           </div>
           {!readOnly && (
             <div className="flex shrink-0 gap-1">
@@ -89,7 +91,7 @@ export function QuestionCard({
               Answer
             </p>
             <div
-              className="prose prose-sm dark:prose-invert max-w-none"
+              className={`prose dark:prose-invert max-w-none ${fontSize}`}
               dangerouslySetInnerHTML={{ __html: question.answer }}
             />
           </div>

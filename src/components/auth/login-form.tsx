@@ -17,6 +17,7 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/questions";
   const [error, setError] = useState("");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   const {
     register,
@@ -25,6 +26,8 @@ export function LoginForm() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
+
+  const isLoading = isSubmitting || isRedirecting;
 
   async function onSubmit(data: LoginInput) {
     setError("");
@@ -39,6 +42,7 @@ export function LoginForm() {
       return;
     }
 
+    setIsRedirecting(true);
     router.push(callbackUrl);
     router.refresh();
   }
@@ -87,8 +91,8 @@ export function LoginForm() {
           )}
         </div>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
-          {isSubmitting ? "Signing in..." : "Sign in"}
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
 

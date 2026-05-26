@@ -31,7 +31,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
     page: params.page ? Number(params.page) : 1,
   };
 
-  const questions = await getQuestionsForUser(session.user.id, filters);
+  const questions = await getQuestionsForUser(session.user.id, filters, session.user.activeDomainId);
 
   return (
     <div className="space-y-6">

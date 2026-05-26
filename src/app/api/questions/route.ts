@@ -26,7 +26,12 @@ export async function GET(req: Request) {
     limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : 50,
   };
 
-  const questions = await getQuestionsForUser(session.user.id, filters);
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeDomainId: true },
+  });
+
+  const questions = await getQuestionsForUser(session.user.id, filters, user?.activeDomainId);
   return NextResponse.json(questions);
 }
 
@@ -47,6 +52,11 @@ export async function POST(req: Request) {
 
   const isAdmin = session.user.role === "ADMIN";
 
+  const currentUser = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeDomainId: true },
+  });
+
   const question = await prisma.question.create({
     data: {
       question: parsed.data.question,
@@ -58,6 +68,7 @@ export async function POST(req: Request) {
       difficulty: parsed.data.difficulty,
       isDefault: isAdmin && body.isDefault === true,
       createdBy: session.user.id,
+      domainId: currentUser?.activeDomainId,
       topics: {
         create: parsed.data.topicIds.map((topicId: string) => ({ topicId })),
       },

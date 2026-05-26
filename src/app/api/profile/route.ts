@@ -17,6 +17,8 @@ export async function GET() {
       image: true,
       shareSlug: true,
       role: true,
+      activeDomainId: true,
+      activeDomain: { select: { id: true, name: true, slug: true } },
     },
   });
 

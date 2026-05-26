@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "PowerShell(npx tsc --noEmit 2>&1)",
-      "PowerShell(npm run *)"
+      "PowerShell(npm run *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsx *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)"
     ]
   }
 }

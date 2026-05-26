@@ -14,6 +14,9 @@ export default auth((req) => {
     pathname.startsWith("/login") || pathname.startsWith("/register");
   const isApiAuthRoute = pathname.startsWith("/api/auth");
 
+  const isApiRoute = pathname.startsWith("/api/");
+  const isDomainSelect = pathname === "/domain-select";
+
   if (isApiAuthRoute) return;
 
   if (isAuthRoute && isLoggedIn) {
@@ -24,6 +27,10 @@ export default auth((req) => {
     const loginUrl = new URL("/login", req.nextUrl);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return Response.redirect(loginUrl);
+  }
+
+  if (isLoggedIn && !req.auth?.user?.activeDomainId && !isDomainSelect && !isApiRoute && !isPublicRoute) {
+    return Response.redirect(new URL("/domain-select", req.nextUrl));
   }
 });
 

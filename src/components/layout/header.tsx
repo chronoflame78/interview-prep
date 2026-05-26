@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "./theme-toggle";
+import { DomainBadge } from "./domain-badge";
 import { UserMenu } from "@/components/auth/user-menu";
 import { Sidebar } from "./sidebar";
 
@@ -56,6 +57,7 @@ export function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <DomainBadge />
           <ThemeToggle />
           <UserMenu />
         </div>

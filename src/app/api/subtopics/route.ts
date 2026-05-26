@@ -12,9 +12,16 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const topicId = searchParams.get("topicId");
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeDomainId: true },
+  });
+
   const subTopics = await prisma.subTopic.findMany({
     where: {
-      ...(topicId && { topicId }),
+      ...(topicId
+        ? { topicId }
+        : { topic: { domainId: user?.activeDomainId } }),
       OR: [{ isDefault: true }, { createdBy: session.user.id }],
     },
     orderBy: { name: "asc" },

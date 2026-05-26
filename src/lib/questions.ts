@@ -4,11 +4,13 @@ import type { QuestionFilters, QuestionWithRelations } from "@/types";
 
 export async function getQuestionsForUser(
   userId: string,
-  filters: QuestionFilters = {}
+  filters: QuestionFilters = {},
+  domainId?: string | null
 ): Promise<QuestionWithRelations[]> {
   const [questions, overrides] = await Promise.all([
     prisma.question.findMany({
       where: {
+        ...(domainId ? { domainId } : {}),
         OR: [
           { isDefault: true },
           { createdBy: userId, isDefault: false },

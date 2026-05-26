@@ -15,13 +15,13 @@ export async function GET(
   const { slug } = await params;
   const targetUser = await prisma.user.findUnique({
     where: { shareSlug: slug },
-    select: { id: true, name: true },
+    select: { id: true, name: true, activeDomainId: true, activeDomain: { select: { name: true } } },
   });
 
   if (!targetUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  const questions = await getQuestionsForUser(targetUser.id);
+  const questions = await getQuestionsForUser(targetUser.id, {}, targetUser.activeDomainId);
   return NextResponse.json({ user: targetUser, questions });
 }

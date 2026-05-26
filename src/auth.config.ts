@@ -24,10 +24,14 @@ export default {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id as string;
         token.role = (user.role ?? "USER") as "USER" | "ADMIN";
+        token.activeDomainId = (user.activeDomainId as string) ?? null;
+      }
+      if (trigger === "update" && session?.activeDomainId !== undefined) {
+        token.activeDomainId = session.activeDomainId;
       }
       return token;
     },
@@ -35,6 +39,7 @@ export default {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "USER" | "ADMIN";
+        session.user.activeDomainId = (token.activeDomainId as string) ?? null;
       }
       return session;
     },

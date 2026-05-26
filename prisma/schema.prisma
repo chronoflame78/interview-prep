@@ -21,6 +21,9 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  activeDomainId    String?
+  activeDomain      Domain?   @relation("ActiveDomain", fields: [activeDomainId], references: [id])
+
   accounts          Account[]
   sessions          Session[]
   createdQuestions   Question[]
@@ -71,19 +74,33 @@ model VerificationToken {
 
 // ─── Application Models ───
 
+model Domain {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  topics    Topic[]
+  questions Question[]
+  users     User[]   @relation("ActiveDomain")
+}
+
 model Topic {
   id        String   @id @default(cuid())
   name      String
   isDefault Boolean  @default(false)
   createdBy String?
+  domainId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   creator   User?      @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  domain    Domain?    @relation(fields: [domainId], references: [id], onDelete: SetNull)
   subTopics SubTopic[]
   questions QuestionTopic[]
 
-  @@unique([name, createdBy])
+  @@unique([name, createdBy, domainId])
 }
 
 model SubTopic {
@@ -116,7 +133,10 @@ model Question {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
+  domainId  String?
+
   creator   User?                  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  domain    Domain?                @relation(fields: [domainId], references: [id], onDelete: SetNull)
   topics    QuestionTopic[]
   subTopics QuestionSubTopic[]
   overrides UserQuestionOverride[]
@@ -124,6 +144,7 @@ model Question {
   @@index([isDefault])
   @@index([createdBy])
   @@index([difficulty])
+  @@index([domainId])
 }
 
 enum Difficulty {

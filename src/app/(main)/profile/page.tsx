@@ -4,19 +4,29 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Copy, RefreshCw, Share2 } from "lucide-react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
+  const { mutate: globalMutate } = useSWRConfig();
   const { data: profile, mutate } = useSWR("/api/profile", fetcher);
+  const { data: domains } = useSWR<{ id: string; name: string; slug: string }[]>("/api/domains", fetcher);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [switchingDomain, setSwitchingDomain] = useState(false);
 
   const shareUrl =
     profile?.shareSlug && typeof window !== "undefined"
@@ -49,6 +59,24 @@ export default function ProfilePage() {
     } else {
       toast.error("Failed to generate link");
     }
+  }
+
+  async function handleDomainChange(domainId: string) {
+    setSwitchingDomain(true);
+    const res = await fetch("/api/domains/active", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ domainId }),
+    });
+    if (res.ok) {
+      await updateSession({ activeDomainId: domainId });
+      mutate((prev: Record<string, unknown>) => ({ ...prev, activeDomainId: domainId }), false);
+      globalMutate("/api/topics");
+      toast.success("Domain switched");
+    } else {
+      toast.error("Failed to switch domain");
+    }
+    setSwitchingDomain(false);
   }
 
   function copyShareLink() {
@@ -89,6 +117,35 @@ export default function ProfilePage() {
               </Button>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Interview Domain</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Switch your active domain to see different interview content.
+          </p>
+          <Select
+            value={profile?.activeDomainId ?? ""}
+            onValueChange={handleDomainChange}
+            disabled={switchingDomain || !domains}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a domain">
+                {domains?.find((d) => d.id === profile?.activeDomainId)?.name ?? "Select a domain"}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {domains?.map((d) => (
+                <SelectItem key={d.id} value={d.id}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 

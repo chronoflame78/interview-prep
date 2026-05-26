@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
 import { Difficulty } from "../src/generated/prisma/enums";
 import bcrypt from "bcryptjs";
@@ -5,114 +6,150 @@ import bcrypt from "bcryptjs";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
+  // ─── Domains ───
+  const domainsData = [
+    { name: "Software Engineering", slug: "software-engineering" },
+    { name: "Finance", slug: "finance" },
+    { name: "Journalism", slug: "journalism" },
+  ];
+
+  const domainMap: Record<string, string> = {};
+  for (const d of domainsData) {
+    const domain = await prisma.domain.upsert({
+      where: { slug: d.slug },
+      update: {},
+      create: { name: d.name, slug: d.slug },
+    });
+    domainMap[d.name] = domain.id;
+  }
+  console.log("Domains seeded:", Object.keys(domainMap).length);
+
+  const seDomainId = domainMap["Software Engineering"];
+  const finDomainId = domainMap["Finance"];
+  const jourDomainId = domainMap["Journalism"];
+
+  // ─── Admin User ───
   const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
   const adminPassword = process.env.ADMIN_PASSWORD || "changeme";
   const hashedPassword = await bcrypt.hash(adminPassword, 12);
 
   const admin = await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: { activeDomainId: seDomainId },
     create: {
       email: adminEmail,
       name: "Admin",
       password: hashedPassword,
       role: "ADMIN",
+      activeDomainId: seDomainId,
     },
   });
-
   console.log("Admin user created:", admin.email);
 
-  const topicsData = [
-    {
-      name: "JavaScript",
-      subTopics: ["Closures", "Promises", "Event Loop", "Prototypes", "ES6+"],
-    },
-    {
-      name: "TypeScript",
-      subTopics: ["Generics", "Type Guards", "Utility Types", "Decorators"],
-    },
-    {
-      name: "React",
-      subTopics: ["Hooks", "State Management", "Performance", "Patterns"],
-    },
-    {
-      name: "Next.js",
-      subTopics: ["App Router", "SSR/SSG", "API Routes", "Middleware"],
-    },
-    {
-      name: "Node.js",
-      subTopics: ["Streams", "Clustering", "Event Emitters", "Security"],
-    },
-    {
-      name: "SQL & Databases",
-      subTopics: ["Joins", "Indexing", "Transactions", "Normalization"],
-    },
-    {
-      name: "System Design",
-      subTopics: ["Scalability", "Caching", "Load Balancing", "Microservices"],
-    },
-    {
-      name: "Data Structures",
-      subTopics: ["Arrays", "Trees", "Graphs", "Hash Tables"],
-    },
-    {
-      name: "Algorithms",
-      subTopics: ["Sorting", "Searching", "Dynamic Programming", "Recursion"],
-    },
-    {
-      name: "HTML & CSS",
-      subTopics: ["Flexbox", "Grid", "Accessibility", "Responsive Design"],
-    },
-    {
-      name: "Git",
-      subTopics: ["Branching", "Rebasing", "Merge Conflicts", "Workflows"],
-    },
-    {
-      name: "DevOps",
-      subTopics: ["CI/CD", "Docker", "Kubernetes", "Monitoring"],
-    },
+  // Backfill: assign all existing users without a domain to Software Engineering
+  await prisma.user.updateMany({
+    where: { activeDomainId: null },
+    data: { activeDomainId: seDomainId },
+  });
+
+  // Backfill: assign all existing topics/questions without a domain to Software Engineering
+  await prisma.topic.updateMany({
+    where: { domainId: null },
+    data: { domainId: seDomainId },
+  });
+  await prisma.question.updateMany({
+    where: { domainId: null },
+    data: { domainId: seDomainId },
+  });
+
+  // ─── Software Engineering Topics ───
+  const seTopicsData = [
+    { name: "JavaScript", subTopics: ["Closures", "Promises", "Event Loop", "Prototypes", "ES6+"] },
+    { name: "TypeScript", subTopics: ["Generics", "Type Guards", "Utility Types", "Decorators"] },
+    { name: "React", subTopics: ["Hooks", "State Management", "Performance", "Patterns"] },
+    { name: "Next.js", subTopics: ["App Router", "SSR/SSG", "API Routes", "Middleware"] },
+    { name: "Node.js", subTopics: ["Streams", "Clustering", "Event Emitters", "Security"] },
+    { name: "SQL & Databases", subTopics: ["Joins", "Indexing", "Transactions", "Normalization"] },
+    { name: "System Design", subTopics: ["Scalability", "Caching", "Load Balancing", "Microservices"] },
+    { name: "Data Structures", subTopics: ["Arrays", "Trees", "Graphs", "Hash Tables"] },
+    { name: "Algorithms", subTopics: ["Sorting", "Searching", "Dynamic Programming", "Recursion"] },
+    { name: "HTML & CSS", subTopics: ["Flexbox", "Grid", "Accessibility", "Responsive Design"] },
+    { name: "Git", subTopics: ["Branching", "Rebasing", "Merge Conflicts", "Workflows"] },
+    { name: "DevOps", subTopics: ["CI/CD", "Docker", "Kubernetes", "Monitoring"] },
+  ];
+
+  // ─── Finance Topics ───
+  const finTopicsData = [
+    { name: "Accounting Principles", subTopics: ["GAAP", "IFRS", "Revenue Recognition", "Balance Sheet"] },
+    { name: "Financial Modeling", subTopics: ["DCF Analysis", "LBO Models", "Comparable Analysis", "Forecasting"] },
+    { name: "Investment Banking", subTopics: ["M&A", "IPO Process", "Valuation", "Deal Structuring"] },
+    { name: "Risk Management", subTopics: ["Market Risk", "Credit Risk", "Operational Risk", "Hedging"] },
+    { name: "Corporate Finance", subTopics: ["Capital Structure", "Working Capital", "Dividends", "Cost of Capital"] },
+  ];
+
+  // ─── Journalism Topics ───
+  const jourTopicsData = [
+    { name: "Investigative Reporting", subTopics: ["Source Development", "FOIA Requests", "Data Analysis", "Verification"] },
+    { name: "Ethics in Journalism", subTopics: ["Objectivity", "Conflicts of Interest", "Privacy", "Corrections"] },
+    { name: "Digital Media", subTopics: ["Social Media", "SEO", "Podcasting", "Video Production"] },
+    { name: "Broadcast News", subTopics: ["Anchoring", "Field Reporting", "Live Coverage", "Editing"] },
+    { name: "Feature Writing", subTopics: ["Narrative Structure", "Interviewing", "Long-form", "Profiles"] },
   ];
 
   const topicMap: Record<string, string> = {};
   const subTopicMap: Record<string, string> = {};
 
-  for (const t of topicsData) {
-    const topic = await prisma.topic.upsert({
-      where: { name_createdBy: { name: t.name, createdBy: admin.id } },
-      update: {},
-      create: { name: t.name, isDefault: true, createdBy: null },
-    });
-    topicMap[t.name] = topic.id;
-
-    for (const subName of t.subTopics) {
-      const sub = await prisma.subTopic.upsert({
+  async function seedTopics(
+    topicsData: { name: string; subTopics: string[] }[],
+    domainId: string
+  ) {
+    for (const t of topicsData) {
+      const topic = await prisma.topic.upsert({
         where: {
-          name_topicId_createdBy: {
-            name: subName,
-            topicId: topic.id,
-            createdBy: admin.id,
-          },
+          name_createdBy_domainId: { name: t.name, createdBy: admin.id, domainId },
         },
         update: {},
-        create: {
-          name: subName,
-          topicId: topic.id,
-          isDefault: true,
-          createdBy: null,
-        },
+        create: { name: t.name, isDefault: true, createdBy: null, domainId },
       });
-      subTopicMap[`${t.name}:${subName}`] = sub.id;
+      topicMap[t.name] = topic.id;
+
+      for (const subName of t.subTopics) {
+        const sub = await prisma.subTopic.upsert({
+          where: {
+            name_topicId_createdBy: {
+              name: subName,
+              topicId: topic.id,
+              createdBy: admin.id,
+            },
+          },
+          update: {},
+          create: {
+            name: subName,
+            topicId: topic.id,
+            isDefault: true,
+            createdBy: null,
+          },
+        });
+        subTopicMap[`${t.name}:${subName}`] = sub.id;
+      }
     }
   }
 
+  await seedTopics(seTopicsData, seDomainId);
+  await seedTopics(finTopicsData, finDomainId);
+  await seedTopics(jourTopicsData, jourDomainId);
   console.log("Topics seeded:", Object.keys(topicMap).length);
 
-  const questionsData: {
+  // ─── Software Engineering Questions ───
+  const seQuestionsData: {
     question: string;
     answer: string;
     difficulty: Difficulty;
@@ -241,26 +278,101 @@ async function main() {
     },
   ];
 
-  for (const q of questionsData) {
-    const topicId = topicMap[q.topic];
-    const subTopicId = q.subTopic
-      ? subTopicMap[`${q.topic}:${q.subTopic}`]
-      : undefined;
+  // ─── Finance Questions ───
+  const finQuestionsData: {
+    question: string;
+    answer: string;
+    difficulty: Difficulty;
+    topic: string;
+    subTopic?: string;
+  }[] = [
+    {
+      question: "<p>Walk me through a DCF analysis.</p>",
+      answer:
+        "<p>A Discounted Cash Flow (DCF) analysis values a company based on its projected future cash flows, discounted back to present value.</p><p><strong>Steps:</strong></p><ol><li>Project free cash flows (FCF) for 5-10 years</li><li>Calculate the terminal value (using perpetuity growth or exit multiple)</li><li>Determine the discount rate (WACC)</li><li>Discount all cash flows to present value</li><li>Sum to get enterprise value, then subtract net debt for equity value</li></ol><p><strong>Key assumptions:</strong> Revenue growth rate, margins, capex, working capital changes, terminal growth rate, WACC.</p>",
+      difficulty: "MEDIUM",
+      topic: "Financial Modeling",
+      subTopic: "DCF Analysis",
+    },
+    {
+      question: "<p>What are the three main financial statements and how are they linked?</p>",
+      answer:
+        "<p><strong>1. Income Statement</strong> — shows profitability (revenue, expenses, net income)</p><p><strong>2. Balance Sheet</strong> — shows financial position (assets = liabilities + equity)</p><p><strong>3. Cash Flow Statement</strong> — shows cash movements (operating, investing, financing)</p><p><strong>Links:</strong></p><ul><li>Net income from the income statement flows to retained earnings on the balance sheet</li><li>Net income is the starting point of the cash flow statement (operating section)</li><li>Cash on the cash flow statement ties to cash on the balance sheet</li><li>Depreciation from the income statement is added back in the cash flow statement</li></ul>",
+      difficulty: "EASY",
+      topic: "Accounting Principles",
+      subTopic: "Balance Sheet",
+    },
+    {
+      question: "<p>Explain the difference between enterprise value and equity value.</p>",
+      answer:
+        "<p><strong>Enterprise Value (EV)</strong> = Equity Value + Net Debt + Minority Interest + Preferred Stock - Cash</p><p><strong>Equity Value (Market Cap)</strong> = Share Price × Shares Outstanding</p><p>EV represents the total value of a business to all stakeholders (debt and equity holders). Equity value represents just the value attributable to shareholders.</p><p><strong>When to use:</strong></p><ul><li>EV-based multiples (EV/EBITDA, EV/Revenue) for comparing companies with different capital structures</li><li>Equity-based multiples (P/E) when capital structure is similar</li></ul>",
+      difficulty: "MEDIUM",
+      topic: "Investment Banking",
+      subTopic: "Valuation",
+    },
+  ];
 
-    await prisma.question.create({
-      data: {
-        question: q.question,
-        answer: q.answer,
-        difficulty: q.difficulty,
-        isDefault: true,
-        createdBy: admin.id,
-        topics: topicId ? { create: { topicId } } : undefined,
-        subTopics: subTopicId ? { create: { subTopicId } } : undefined,
-      },
-    });
+  // ─── Journalism Questions ───
+  const jourQuestionsData: {
+    question: string;
+    answer: string;
+    difficulty: Difficulty;
+    topic: string;
+    subTopic?: string;
+  }[] = [
+    {
+      question: "<p>What are the key principles of journalistic ethics?</p>",
+      answer:
+        "<p>The core principles include:</p><ul><li><strong>Truth and Accuracy</strong> — verify facts, provide context, attribute sources</li><li><strong>Independence</strong> — avoid conflicts of interest, don't accept gifts that could influence coverage</li><li><strong>Fairness and Impartiality</strong> — present all sides, distinguish news from opinion</li><li><strong>Minimizing Harm</strong> — balance the public's right to know with potential harm to individuals</li><li><strong>Accountability</strong> — correct errors promptly, be transparent about methods</li></ul><p>These principles guide editorial decision-making and maintain public trust in journalism.</p>",
+      difficulty: "EASY",
+      topic: "Ethics in Journalism",
+      subTopic: "Objectivity",
+    },
+    {
+      question: "<p>How do you protect confidential sources?</p>",
+      answer:
+        "<p><strong>Methods for source protection:</strong></p><ul><li>Use encrypted communication (Signal, SecureDrop)</li><li>Never store source identity on networked devices</li><li>Use anonymous attribution in published stories</li><li>Understand shield laws in your jurisdiction</li><li>Be prepared to face legal consequences rather than reveal a source</li></ul><p><strong>Key considerations:</strong></p><ul><li>Negotiate terms of confidentiality upfront</li><li>Document the source's reliability without identifying them</li><li>Consider the legal and ethical implications before promising confidentiality</li></ul>",
+      difficulty: "MEDIUM",
+      topic: "Investigative Reporting",
+      subTopic: "Source Development",
+    },
+    {
+      question: "<p>What makes a compelling long-form feature story?</p>",
+      answer:
+        "<p>A great feature story combines:</p><ul><li><strong>Narrative arc</strong> — a clear beginning, rising tension, and resolution</li><li><strong>Human element</strong> — real people whose experiences drive the story</li><li><strong>Scene-setting</strong> — vivid, specific details that place the reader in the moment</li><li><strong>Significance</strong> — connects individual stories to larger themes or systemic issues</li><li><strong>Strong voice</strong> — distinctive writing that engages the reader</li></ul><p><strong>Structure tips:</strong> Open with a compelling scene or anecdote, use the nut graf to explain why the story matters, alternate between narrative scenes and expository sections.</p>",
+      difficulty: "MEDIUM",
+      topic: "Feature Writing",
+      subTopic: "Long-form",
+    },
+  ];
+
+  async function seedQuestions(
+    questionsData: { question: string; answer: string; difficulty: Difficulty; topic: string; subTopic?: string }[],
+    domainId: string
+  ) {
+    for (const q of questionsData) {
+      const topicId = topicMap[q.topic];
+      const subTopicId = q.subTopic ? subTopicMap[`${q.topic}:${q.subTopic}`] : undefined;
+
+      await prisma.question.create({
+        data: {
+          question: q.question,
+          answer: q.answer,
+          difficulty: q.difficulty,
+          isDefault: true,
+          createdBy: admin.id,
+          domainId,
+          topics: topicId ? { create: { topicId } } : undefined,
+          subTopics: subTopicId ? { create: { subTopicId } } : undefined,
+        },
+      });
+    }
   }
 
-  console.log("Questions seeded:", questionsData.length);
+  await seedQuestions(seQuestionsData, seDomainId);
+  await seedQuestions(finQuestionsData, finDomainId);
+  await seedQuestions(jourQuestionsData, jourDomainId);
+  console.log("Questions seeded:", seQuestionsData.length + finQuestionsData.length + jourQuestionsData.length);
 }
 
 main()

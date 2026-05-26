@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -7,8 +9,14 @@ import { QuestionList } from "@/components/questions/question-list";
 import type { QuestionWithRelations } from "@/types";
 
 export default async function AdminQuestionsPage() {
+  const session = await auth();
+  if (!session?.user) redirect("/login");
+
   const questions = await prisma.question.findMany({
-    where: { isDefault: true },
+    where: {
+      isDefault: true,
+      ...(session.user.activeDomainId ? { domainId: session.user.activeDomainId } : {}),
+    },
     include: {
       topics: { include: { topic: true } },
       subTopics: { include: { subTopic: true } },

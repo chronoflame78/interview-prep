@@ -9,8 +9,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeDomainId: true },
+  });
+
   const topics = await prisma.topic.findMany({
     where: {
+      domainId: user?.activeDomainId,
       OR: [{ isDefault: true }, { createdBy: session.user.id }],
     },
     include: {
@@ -44,11 +50,17 @@ export async function POST(req: Request) {
 
   const isAdmin = session.user.role === "ADMIN";
 
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { activeDomainId: true },
+  });
+
   const topic = await prisma.topic.create({
     data: {
       name: parsed.data.name,
       isDefault: isAdmin && body.isDefault === true,
       createdBy: isAdmin && body.isDefault === true ? null : session.user.id,
+      domainId: user?.activeDomainId,
     },
     include: { subTopics: true },
   });

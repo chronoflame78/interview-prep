@@ -15,12 +15,12 @@ export default async function SharedProfilePage({ params }: Props) {
   const { slug } = await params;
   const targetUser = await prisma.user.findUnique({
     where: { shareSlug: slug },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, activeDomainId: true, activeDomain: { select: { name: true } } },
   });
 
   if (!targetUser) notFound();
 
-  const questions = await getQuestionsForUser(targetUser.id);
+  const questions = await getQuestionsForUser(targetUser.id, {}, targetUser.activeDomainId);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-6">

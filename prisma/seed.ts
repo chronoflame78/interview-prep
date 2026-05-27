@@ -112,32 +112,30 @@ async function main() {
     domainId: string
   ) {
     for (const t of topicsData) {
-      const topic = await prisma.topic.upsert({
-        where: {
-          name_createdBy_domainId: { name: t.name, createdBy: admin.id, domainId },
-        },
-        update: {},
-        create: { name: t.name, isDefault: true, createdBy: null, domainId },
+      let topic = await prisma.topic.findFirst({
+        where: { name: t.name, domainId },
       });
+      if (!topic) {
+        topic = await prisma.topic.create({
+          data: { name: t.name, isDefault: true, createdBy: null, domainId },
+        });
+      }
       topicMap[t.name] = topic.id;
 
       for (const subName of t.subTopics) {
-        const sub = await prisma.subTopic.upsert({
-          where: {
-            name_topicId_createdBy: {
+        let sub = await prisma.subTopic.findFirst({
+          where: { name: subName, topicId: topic.id },
+        });
+        if (!sub) {
+          sub = await prisma.subTopic.create({
+            data: {
               name: subName,
               topicId: topic.id,
-              createdBy: admin.id,
+              isDefault: true,
+              createdBy: null,
             },
-          },
-          update: {},
-          create: {
-            name: subName,
-            topicId: topic.id,
-            isDefault: true,
-            createdBy: null,
-          },
-        });
+          });
+        }
         subTopicMap[`${t.name}:${subName}`] = sub.id;
       }
     }
@@ -353,6 +351,11 @@ async function main() {
     for (const q of questionsData) {
       const topicId = topicMap[q.topic];
       const subTopicId = q.subTopic ? subTopicMap[`${q.topic}:${q.subTopic}`] : undefined;
+
+      const existing = await prisma.question.findFirst({
+        where: { question: q.question, domainId },
+      });
+      if (existing) continue;
 
       await prisma.question.create({
         data: {

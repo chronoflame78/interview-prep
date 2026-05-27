@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DifficultyBadge } from "./difficulty-badge";
+import { HighlightedHtml } from "@/components/ui/highlighted-html";
 import type { QuestionWithRelations } from "@/types";
 
 function stripHtml(html: string) {
@@ -50,9 +51,9 @@ export function QuestionCard({
             </div>
             <div className={`${fontSize} leading-relaxed`}>
               {expanded ? (
-                <div
+                <HighlightedHtml
+                  html={question.question}
                   className="prose dark:prose-invert max-w-none"
-                  dangerouslySetInnerHTML={{ __html: question.question }}
                 />
               ) : (
                 plainText.length > 200
@@ -90,9 +91,9 @@ export function QuestionCard({
             <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
               Answer
             </p>
-            <div
+            <HighlightedHtml
+              html={question.answer}
               className={`prose dark:prose-invert max-w-none ${fontSize}`}
-              dangerouslySetInnerHTML={{ __html: question.answer }}
             />
           </div>
         </CardContent>

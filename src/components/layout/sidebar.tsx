@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useState, useCallback } from "react";
 import useSWR from "swr";
-import { ChevronDown, ChevronRight, FolderOpen, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, FolderOpen, Mic, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,6 +57,18 @@ function SidebarContent() {
   return (
     <ScrollArea className="h-full">
       <div className="space-y-1 p-4">
+        <Link
+          href="/interview"
+          className={cn(
+            "text-muted-foreground hover:text-foreground hover:bg-accent mb-3 flex items-center rounded-md px-2 py-1.5 text-sm transition-colors",
+            pathname.startsWith("/interview") &&
+              "bg-accent text-foreground font-medium"
+          )}
+        >
+          <Mic className="mr-2 h-4 w-4" />
+          Mock Interview
+        </Link>
+
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold">Topics</h3>
           <Link

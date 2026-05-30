@@ -30,6 +30,7 @@ model User {
   questionOverrides  UserQuestionOverride[]
   createdTopics      Topic[]
   createdSubTopics   SubTopic[]
+  interviewSessions  InterviewSession[]
 }
 
 enum Role {
@@ -83,7 +84,8 @@ model Domain {
 
   topics    Topic[]
   questions Question[]
-  users     User[]   @relation("ActiveDomain")
+  users     User[]             @relation("ActiveDomain")
+  interviewSessions InterviewSession[]
 }
 
 model Topic {
@@ -135,11 +137,12 @@ model Question {
 
   domainId  String?
 
-  creator   User?                  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
-  domain    Domain?                @relation(fields: [domainId], references: [id], onDelete: SetNull)
-  topics    QuestionTopic[]
-  subTopics QuestionSubTopic[]
-  overrides UserQuestionOverride[]
+  creator        User?                  @relation(fields: [createdBy], references: [id], onDelete: SetNull)
+  domain         Domain?                @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  topics         QuestionTopic[]
+  subTopics      QuestionSubTopic[]
+  overrides      UserQuestionOverride[]
+  interviewTurns InterviewTurn[]
 
   @@index([isDefault])
   @@index([createdBy])
@@ -193,4 +196,51 @@ model UserQuestionOverride {
 
   @@unique([userId, questionId])
   @@index([userId])
+}
+
+// ─── Mock Interview Models ───
+
+model InterviewSession {
+  id        String          @id @default(cuid())
+  userId    String
+  domainId  String?
+  status    InterviewStatus @default(ACTIVE)
+  config    Json
+  startedAt DateTime        @default(now())
+  endedAt   DateTime?
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain Domain?         @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  turns  InterviewTurn[]
+
+  @@index([userId, startedAt])
+}
+
+enum InterviewStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model InterviewTurn {
+  id         String   @id @default(cuid())
+  sessionId  String
+  order      Int
+  type       TurnType
+  questionId String?
+  promptText String   @db.Text
+  answerText String?  @db.Text
+  evaluation Json?
+  decision   Json?
+  createdAt  DateTime @default(now())
+
+  session  InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question Question?        @relation(fields: [questionId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, order])
+}
+
+enum TurnType {
+  DB_QUESTION
+  AI_FOLLOWUP
 }

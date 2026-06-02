@@ -16,6 +16,13 @@ export type QuestionWithRelations = {
   hasOverride: boolean;
   topics: { topic: { id: string; name: string } }[];
   subTopics: { subTopic: { id: string; name: string } }[];
+  relatedTo: {
+    toQuestion: {
+      id: string;
+      question: string;
+      difficulty: Difficulty;
+    };
+  }[];
 };
 
 export type TopicWithSubTopics = {

@@ -20,6 +20,13 @@ export default async function AdminQuestionsPage() {
     include: {
       topics: { include: { topic: true } },
       subTopics: { include: { subTopic: true } },
+      relatedTo: {
+        include: {
+          toQuestion: {
+            select: { id: true, question: true, difficulty: true },
+          },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -40,7 +47,10 @@ export default async function AdminQuestionsPage() {
             Manage questions visible to all users.
           </p>
         </div>
-        <Link href="/questions/new" className={cn(buttonVariants(), "gap-2")}>
+        <Link
+          href={`/questions/new?returnTo=${encodeURIComponent("/admin/questions")}`}
+          className={cn(buttonVariants(), "gap-2")}
+        >
           <Plus className="h-4 w-4" />
           Add Default Question
         </Link>

@@ -33,6 +33,14 @@ export default async function QuestionsPage({ searchParams }: Props) {
 
   const questions = await getQuestionsForUser(session.user.id, filters, session.user.activeDomainId);
 
+  const queryString = new URLSearchParams(
+    Object.entries(params).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined
+    )
+  ).toString();
+  const returnTo = queryString ? `/questions?${queryString}` : "/questions";
+  const newHref = `/questions/new?returnTo=${encodeURIComponent(returnTo)}`;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -42,7 +50,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
             {questions.length} question{questions.length !== 1 ? "s" : ""} found
           </p>
         </div>
-        <Link href="/questions/new" className={cn(buttonVariants(), "gap-2")}>
+        <Link href={newHref} className={cn(buttonVariants(), "gap-2")}>
           <Plus className="h-4 w-4" />
           Add Question
         </Link>

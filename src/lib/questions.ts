@@ -19,6 +19,13 @@ export async function getQuestionsForUser(
       include: {
         topics: { include: { topic: true } },
         subTopics: { include: { subTopic: true } },
+        relatedTo: {
+          include: {
+            toQuestion: {
+              select: { id: true, question: true, difficulty: true },
+            },
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -50,6 +57,7 @@ export async function getQuestionsForUser(
         hasOverride: !!override,
         topics: q.topics,
         subTopics: q.subTopics,
+        relatedTo: q.relatedTo,
       };
       return result;
     })
@@ -111,6 +119,13 @@ export async function getQuestionForUser(userId: string, questionId: string) {
       include: {
         topics: { include: { topic: true } },
         subTopics: { include: { subTopic: true } },
+        relatedTo: {
+          include: {
+            toQuestion: {
+              select: { id: true, question: true, difficulty: true },
+            },
+          },
+        },
       },
     }),
     prisma.userQuestionOverride.findUnique({
@@ -136,5 +151,6 @@ export async function getQuestionForUser(userId: string, questionId: string) {
     hasOverride: !!override,
     topics: question.topics,
     subTopics: question.subTopics,
+    relatedTo: question.relatedTo,
   } satisfies QuestionWithRelations;
 }

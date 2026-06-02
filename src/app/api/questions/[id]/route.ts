@@ -53,6 +53,10 @@ export async function PUT(
     );
   }
 
+  const relatedIds = parsed.data.relatedQuestionIds.filter(
+    (rid: string) => !!rid && rid !== id
+  );
+
   const updated = await prisma.question.update({
     where: { id },
     data: {
@@ -73,10 +77,21 @@ export async function PUT(
           subTopicId,
         })),
       },
+      relatedTo: {
+        deleteMany: {},
+        create: relatedIds.map((toQuestionId: string) => ({ toQuestionId })),
+      },
     },
     include: {
       topics: { include: { topic: true } },
       subTopics: { include: { subTopic: true } },
+      relatedTo: {
+        include: {
+          toQuestion: {
+            select: { id: true, question: true, difficulty: true },
+          },
+        },
+      },
     },
   });
 

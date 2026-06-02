@@ -10,6 +10,7 @@ export const questionSchema = z.object({
   difficulty: z.enum(["EASY", "MEDIUM", "HARD"]).default("MEDIUM"),
   topicIds: z.array(z.string()).default([]),
   subTopicIds: z.array(z.string()).default([]),
+  relatedQuestionIds: z.array(z.string()).default([]),
 });
 
 export const overrideSchema = z.object({

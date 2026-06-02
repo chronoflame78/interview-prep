@@ -57,6 +57,10 @@ export async function POST(req: Request) {
     select: { activeDomainId: true },
   });
 
+  const relatedIds = parsed.data.relatedQuestionIds.filter(
+    (id: string) => !!id
+  );
+
   const question = await prisma.question.create({
     data: {
       question: parsed.data.question,
@@ -77,10 +81,20 @@ export async function POST(req: Request) {
           subTopicId,
         })),
       },
+      relatedTo: {
+        create: relatedIds.map((toQuestionId: string) => ({ toQuestionId })),
+      },
     },
     include: {
       topics: { include: { topic: true } },
       subTopics: { include: { subTopic: true } },
+      relatedTo: {
+        include: {
+          toQuestion: {
+            select: { id: true, question: true, difficulty: true },
+          },
+        },
+      },
     },
   });
 

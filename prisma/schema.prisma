@@ -143,6 +143,8 @@ model Question {
   subTopics      QuestionSubTopic[]
   overrides      UserQuestionOverride[]
   interviewTurns InterviewTurn[]
+  relatedTo      QuestionRelation[]     @relation("RelatedFrom")
+  relatedFrom    QuestionRelation[]     @relation("RelatedTo")
 
   @@index([isDefault])
   @@index([createdBy])
@@ -174,6 +176,18 @@ model QuestionSubTopic {
   subTopic SubTopic @relation(fields: [subTopicId], references: [id], onDelete: Cascade)
 
   @@id([questionId, subTopicId])
+}
+
+model QuestionRelation {
+  fromQuestionId String
+  toQuestionId   String
+  createdAt      DateTime @default(now())
+
+  fromQuestion Question @relation("RelatedFrom", fields: [fromQuestionId], references: [id], onDelete: Cascade)
+  toQuestion   Question @relation("RelatedTo", fields: [toQuestionId], references: [id], onDelete: Cascade)
+
+  @@id([fromQuestionId, toQuestionId])
+  @@index([toQuestionId])
 }
 
 model UserQuestionOverride {

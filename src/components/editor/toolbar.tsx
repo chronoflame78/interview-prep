@@ -3,6 +3,7 @@
 import type { Editor } from "@tiptap/react";
 import {
   Bold,
+  Braces,
   Code,
   Heading1,
   Heading2,
@@ -124,11 +125,18 @@ export function Toolbar({ editor }: ToolbarProps) {
         <ListOrdered className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
+        onClick={() => editor.chain().focus().toggleCode().run()}
+        active={editor.isActive("code")}
+        title="Inline Code (Ctrl+E)"
+      >
+        <Code className={iconSize} />
+      </ToolbarButton>
+      <ToolbarButton
         onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         active={editor.isActive("codeBlock")}
         title="Code Block"
       >
-        <Code className={iconSize} />
+        <Braces className={iconSize} />
       </ToolbarButton>
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBlockquote().run()}

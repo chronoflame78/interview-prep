@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronUp, Edit, Pencil, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,42 @@ export function QuestionCard({
   const [expanded, setExpanded] = useState(false);
   const plainText = stripHtml(question.question);
 
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentUrl = searchParams.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname;
+  const editHref = `/questions/${question.id}/edit?returnTo=${encodeURIComponent(currentUrl)}`;
+
+  useEffect(() => {
+    const anchorId = `q-${question.id}`;
+    const focus = () => {
+      setExpanded(true);
+      requestAnimationFrame(() => {
+        document
+          .getElementById(anchorId)
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    if (window.location.hash === `#${anchorId}`) focus();
+
+    const onHashChange = () => {
+      if (window.location.hash === `#${anchorId}`) focus();
+    };
+    const onFocusEvent = (e: Event) => {
+      const detail = (e as CustomEvent<{ id: string }>).detail;
+      if (detail?.id === question.id) focus();
+    };
+    window.addEventListener("hashchange", onHashChange);
+    window.addEventListener("question:focus", onFocusEvent);
+    return () => {
+      window.removeEventListener("hashchange", onHashChange);
+      window.removeEventListener("question:focus", onFocusEvent);
+    };
+  }, [question.id]);
+
   return (
-    <Card>
+    <Card id={`q-${question.id}`} className="scroll-mt-20">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
@@ -65,7 +100,7 @@ export function QuestionCard({
           {!readOnly && (
             <div className="flex shrink-0 gap-1">
               <Link
-                href={`/questions/${question.id}/edit`}
+                href={editHref}
                 className="hover:bg-accent inline-flex h-8 w-8 items-center justify-center rounded-md"
               >
                 <Edit className="h-4 w-4" />
@@ -96,6 +131,38 @@ export function QuestionCard({
               className={`prose dark:prose-invert max-w-none ${fontSize}`}
             />
           </div>
+        </CardContent>
+      )}
+
+      {expanded && question.relatedTo.length > 0 && (
+        <CardContent className="pt-0">
+          <p className="text-muted-foreground mb-2 text-xs font-medium uppercase">
+            Related Questions
+          </p>
+          <ul className="space-y-1">
+            {question.relatedTo.map((r) => (
+              <li key={r.toQuestion.id}>
+                <Link
+                  href={`/questions#q-${r.toQuestion.id}`}
+                  onClick={() => {
+                    window.dispatchEvent(
+                      new CustomEvent("question:focus", {
+                        detail: { id: r.toQuestion.id },
+                      })
+                    );
+                  }}
+                  className="hover:bg-accent group flex items-start gap-2 rounded-md p-2 text-sm transition-colors"
+                >
+                  <DifficultyBadge
+                    difficulty={r.toQuestion.difficulty}
+                  />
+                  <span className="line-clamp-2 flex-1 group-hover:underline">
+                    {stripHtml(r.toQuestion.question)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </CardContent>
       )}
 

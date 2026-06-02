@@ -139,6 +139,27 @@
   margin: 0.75rem 0;
 }
 
+.prose :not(pre) > code {
+  background-color: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  padding: 0.0625rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+  font-weight: 500;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+
+.dark .prose :not(pre) > code {
+  background-color: rgba(96, 165, 250, 0.15);
+  color: #93c5fd;
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.prose :not(pre) > code::before,
+.prose :not(pre) > code::after {
+  content: none !important;
+}
+
 @layer base {
 
   .dark .hljs { color: #c9d1d9 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { LanguageTabs } from "./language-tabs";
 import { TopicSelector } from "@/components/topics/topic-selector";
+import { RelatedQuestionSelector } from "./related-question-selector";
 import { DIFFICULTIES } from "@/lib/constants";
 import type { Difficulty } from "@/generated/prisma/enums";
 import type { QuestionWithRelations } from "@/types";
@@ -37,6 +38,10 @@ export function QuestionForm({
   isAdmin,
 }: QuestionFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo =
+    rawReturnTo && rawReturnTo.startsWith("/") ? rawReturnTo : "/questions";
   const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -49,6 +54,8 @@ export function QuestionForm({
     difficulty: question?.difficulty ?? ("MEDIUM" as Difficulty),
     topicIds: question?.topics.map((t) => t.topic.id) ?? [],
     subTopicIds: question?.subTopics.map((s) => s.subTopic.id) ?? [],
+    relatedQuestionIds:
+      question?.relatedTo.map((r) => r.toQuestion.id) ?? [],
     isDefault: question?.isDefault ?? false,
   });
 
@@ -125,7 +132,7 @@ export function QuestionForm({
             ? "Question updated"
             : "Question created"
       );
-      router.push("/questions");
+      router.push(returnTo);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -142,7 +149,7 @@ export function QuestionForm({
     });
     if (res.ok) {
       toast.success("Override removed");
-      router.push("/questions");
+      router.push(returnTo);
       router.refresh();
     } else {
       toast.error("Failed to reset");
@@ -210,24 +217,35 @@ export function QuestionForm({
       </div>
 
       {!isOverride && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Topics</Label>
+              <TopicSelector
+                type="topic"
+                selectedIds={formData.topicIds}
+                onChange={(ids) => update("topicIds", ids)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sub-Topics</Label>
+              <TopicSelector
+                type="subtopic"
+                selectedIds={formData.subTopicIds}
+                onChange={(ids) => update("subTopicIds", ids)}
+              />
+            </div>
+          </div>
+
           <div className="space-y-2">
-            <Label>Topics</Label>
-            <TopicSelector
-              type="topic"
-              selectedIds={formData.topicIds}
-              onChange={(ids) => update("topicIds", ids)}
+            <Label>Related Questions</Label>
+            <RelatedQuestionSelector
+              selectedIds={formData.relatedQuestionIds}
+              onChange={(ids) => update("relatedQuestionIds", ids)}
+              excludeId={question?.id}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Sub-Topics</Label>
-            <TopicSelector
-              type="subtopic"
-              selectedIds={formData.subTopicIds}
-              onChange={(ids) => update("subTopicIds", ids)}
-            />
-          </div>
-        </div>
+        </>
       )}
 
       <div className="flex items-center gap-3">
@@ -236,7 +254,7 @@ export function QuestionForm({
         </Button>
         <Button
           variant="outline"
-          onClick={() => router.back()}
+          onClick={() => router.push(returnTo)}
           disabled={saving}
         >
           Cancel

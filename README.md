@@ -2,6 +2,8 @@
 
 A full-stack interview preparation web application where admins provide default question sets and users can add their own private questions, customize defaults, and share their personalized study materials.
 
+**Live demo:** [https://leonguyen-interview-prep.vercel.app](https://leonguyen-interview-prep.vercel.app)
+
 ## Features
 
 - **Question Management** — Browse, create, edit, and organize interview questions with rich text (TipTap WYSIWYG editor)

@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight, FolderOpen, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TopicIcon } from "./topic-icon";
 import type { TopicWithSubTopics } from "@/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -106,13 +107,14 @@ function SidebarContent() {
                 <Link
                   href={`/questions?topicId=${topic.id}`}
                   className={cn(
-                    "text-muted-foreground hover:text-foreground hover:bg-accent flex flex-1 items-center rounded-md px-1.5 py-1.5 text-sm transition-colors",
+                    "text-muted-foreground hover:text-foreground hover:bg-accent flex flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-sm transition-colors",
                     isActive && "bg-accent text-foreground font-medium"
                   )}
                 >
-                  {topic.name}
+                  <TopicIcon name={topic.name} className="h-4 w-4 shrink-0" />
+                  <span className="flex-1 truncate">{topic.name}</span>
                   {!topic.isDefault && (
-                    <span className="bg-muted text-muted-foreground ml-auto rounded px-1.5 py-0.5 text-[10px]">
+                    <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-[10px]">
                       mine
                     </span>
                   )}

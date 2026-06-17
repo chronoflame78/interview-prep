@@ -1,9 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
-import { Edit, Plus, Trash2 } from "lucide-react";
+import { Edit, GripVertical, Plus, Trash2 } from "lucide-react";
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,11 +35,204 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { TopicWithSubTopics } from "@/types";
+import {
+  applyOrder,
+  saveOrder,
+  useTopicOrder,
+  TOPIC_ORDER_KEY,
+  type TopicOrderState,
+} from "@/lib/topic-order";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface TopicListProps {
   isAdmin?: boolean;
+}
+
+type SubTopic = TopicWithSubTopics["subTopics"][number];
+
+interface SubTopicHandlers {
+  isAdmin?: boolean;
+  onEdit: (topicId: string, sub: SubTopic) => void;
+  onDelete: (id: string) => void;
+}
+
+interface TopicHandlers extends SubTopicHandlers {
+  onAddSub: (topicId: string) => void;
+  onEditTopic: (topic: { id: string; name: string }) => void;
+  onDeleteTopic: (id: string) => void;
+  onReorderSubs: (topicId: string, sub: SubTopic[]) => void;
+}
+
+function SortableSubBadge({
+  sub,
+  topicId,
+  handlers,
+}: {
+  sub: SubTopic;
+  topicId: string;
+  handlers: SubTopicHandlers;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: sub.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  return (
+    <Badge
+      ref={setNodeRef}
+      style={style}
+      variant="outline"
+      className="gap-1 py-1"
+    >
+      <button
+        type="button"
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        aria-label={`Reorder ${sub.name}`}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-3 w-3" />
+      </button>
+      {sub.name}
+      {(!sub.isDefault || handlers.isAdmin) && (
+        <div className="flex gap-0.5">
+          <button
+            type="button"
+            onClick={() => handlers.onEdit(topicId, sub)}
+            className="hover:text-foreground"
+          >
+            <Edit className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handlers.onDelete(sub.id)}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2 className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </Badge>
+  );
+}
+
+function SortableTopicCard({
+  topic,
+  subTopics,
+  handlers,
+}: {
+  topic: TopicWithSubTopics;
+  subTopics: SubTopic[];
+  handlers: TopicHandlers;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: topic.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : undefined,
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleSubDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = subTopics.findIndex((s) => s.id === active.id);
+    const newIndex = subTopics.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    handlers.onReorderSubs(topic.id, arrayMove(subTopics, oldIndex, newIndex));
+  }
+
+  return (
+    <Card ref={setNodeRef} style={style}>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <button
+              type="button"
+              className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+              aria-label={`Reorder ${topic.name}`}
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-4 w-4" />
+            </button>
+            {topic.name}
+            {topic.isDefault && (
+              <Badge variant="secondary" className="text-xs">
+                Default
+              </Badge>
+            )}
+          </CardTitle>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => handlers.onAddSub(topic.id)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            {(!topic.isDefault || handlers.isAdmin) && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() =>
+                    handlers.onEditTopic({ id: topic.id, name: topic.name })
+                  }
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive h-7 w-7"
+                  onClick={() => handlers.onDeleteTopic(topic.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      {subTopics.length > 0 && (
+        <CardContent className="pt-0">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleSubDragEnd}
+          >
+            <SortableContext
+              items={subTopics.map((s) => s.id)}
+              strategy={rectSortingStrategy}
+            >
+              <div className="flex flex-wrap gap-2">
+                {subTopics.map((sub) => (
+                  <SortableSubBadge
+                    key={sub.id}
+                    sub={sub}
+                    topicId={topic.id}
+                    handlers={handlers}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </CardContent>
+      )}
+    </Card>
+  );
 }
 
 export function TopicList({ isAdmin }: TopicListProps) {
@@ -36,6 +247,42 @@ export function TopicList({ isAdmin }: TopicListProps) {
   const [editingSub, setEditingSub] = useState<{ id: string; name: string } | null>(null);
   const [name, setName] = useState("");
   const [isDefault, setIsDefault] = useState(false);
+
+  // Per-viewer custom ordering, persisted to localStorage (not the DB) under a
+  // single shared key, so the same arrangement drives both this page and the
+  // left-nav sidebar. The hook keeps every consumer in sync across reorders.
+  const order = useTopicOrder(TOPIC_ORDER_KEY);
+
+  function persistOrder(next: TopicOrderState) {
+    saveOrder(TOPIC_ORDER_KEY, next);
+  }
+
+  const orderedTopics = useMemo(
+    () => (topics ? applyOrder(topics, order.topics) : topics),
+    [topics, order.topics]
+  );
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  function handleTopicDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !orderedTopics) return;
+    const oldIndex = orderedTopics.findIndex((t) => t.id === active.id);
+    const newIndex = orderedTopics.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(orderedTopics, oldIndex, newIndex);
+    persistOrder({ ...order, topics: reordered.map((t) => t.id) });
+  }
+
+  function handleReorderSubs(topicId: string, sub: SubTopic[]) {
+    persistOrder({
+      ...order,
+      subs: { ...order.subs, [topicId]: sub.map((s) => s.id) },
+    });
+  }
 
   async function handleSaveTopic() {
     if (!name.trim()) return;
@@ -110,6 +357,30 @@ export function TopicList({ isAdmin }: TopicListProps) {
       toast.error("Failed to delete");
     }
   }
+
+  const topicHandlers: TopicHandlers = {
+    isAdmin,
+    onAddSub: (topicId) => {
+      setParentTopicId(topicId);
+      setName("");
+      setEditingSub(null);
+      setSubDialogOpen(true);
+    },
+    onEditTopic: (topic) => {
+      setEditingTopic(topic);
+      setName(topic.name);
+      setDialogOpen(true);
+    },
+    onDeleteTopic: handleDeleteTopic,
+    onEdit: (topicId, sub) => {
+      setParentTopicId(topicId);
+      setEditingSub({ id: sub.id, name: sub.name });
+      setName(sub.name);
+      setSubDialogOpen(true);
+    },
+    onDelete: handleDeleteSubTopic,
+    onReorderSubs: handleReorderSubs,
+  };
 
   return (
     <div className="space-y-4">
@@ -192,99 +463,32 @@ export function TopicList({ isAdmin }: TopicListProps) {
         </DialogContent>
       </Dialog>
 
-      {topics?.map((topic) => (
-        <Card key={topic.id}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-base">
-                {topic.name}
-                {topic.isDefault && (
-                  <Badge variant="secondary" className="text-xs">
-                    Default
-                  </Badge>
-                )}
-              </CardTitle>
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => {
-                    setParentTopicId(topic.id);
-                    setName("");
-                    setEditingSub(null);
-                    setSubDialogOpen(true);
-                  }}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
-                {(!topic.isDefault || isAdmin) && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => {
-                        setEditingTopic({ id: topic.id, name: topic.name });
-                        setName(topic.name);
-                        setDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive h-7 w-7"
-                      onClick={() => handleDeleteTopic(topic.id)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </>
-                )}
-              </div>
+      {orderedTopics && orderedTopics.length > 0 && (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleTopicDragEnd}
+        >
+          <SortableContext
+            items={orderedTopics.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {orderedTopics.map((topic) => (
+                <SortableTopicCard
+                  key={topic.id}
+                  topic={topic}
+                  subTopics={applyOrder(
+                    topic.subTopics,
+                    order.subs[topic.id] ?? []
+                  )}
+                  handlers={topicHandlers}
+                />
+              ))}
             </div>
-          </CardHeader>
-          {topic.subTopics.length > 0 && (
-            <CardContent className="pt-0">
-              <div className="flex flex-wrap gap-2">
-                {topic.subTopics.map((sub) => (
-                  <Badge
-                    key={sub.id}
-                    variant="outline"
-                    className="gap-1 py-1"
-                  >
-                    {sub.name}
-                    {(!sub.isDefault || isAdmin) && (
-                      <div className="flex gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setParentTopicId(topic.id);
-                            setEditingSub({ id: sub.id, name: sub.name });
-                            setName(sub.name);
-                            setSubDialogOpen(true);
-                          }}
-                          className="hover:text-foreground"
-                        >
-                          <Edit className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSubTopic(sub.id)}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      ))}
+          </SortableContext>
+        </DndContext>
+      )}
 
       {topics?.length === 0 && (
         <p className="text-muted-foreground py-8 text-center text-sm">

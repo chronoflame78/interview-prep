@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TopicIcon } from "./topic-icon";
+import { applyOrder, useTopicOrder } from "@/lib/topic-order";
 import type { TopicWithSubTopics } from "@/types";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -44,6 +45,11 @@ function SidebarContent() {
     "/api/topics",
     fetcher
   );
+
+  // Apply the viewer's personal topic/sub-topic ordering (shared with the
+  // topic config page via localStorage); falls back to the API's order.
+  const order = useTopicOrder();
+  const orderedTopics = topics ? applyOrder(topics, order.topics) : topics;
 
   if (isLoading) {
     return (
@@ -81,10 +87,14 @@ function SidebarContent() {
           All Questions
         </Link>
 
-        {topics?.map((topic) => {
+        {orderedTopics?.map((topic) => {
           const isExpanded = expanded.has(topic.id);
           const isActive = activeTopicId === topic.id && !activeSubTopicId;
-          const hasSubTopics = topic.subTopics.length > 0;
+          const subTopics = applyOrder(
+            topic.subTopics,
+            order.subs[topic.id] ?? []
+          );
+          const hasSubTopics = subTopics.length > 0;
 
           return (
             <div key={topic.id}>
@@ -123,7 +133,7 @@ function SidebarContent() {
 
               {hasSubTopics && isExpanded && (
                 <div className="ml-5 space-y-0.5 pt-0.5">
-                  {topic.subTopics.map((sub) => (
+                  {subTopics.map((sub) => (
                     <Link
                       key={sub.id}
                       href={`/questions?topicId=${topic.id}&subTopicId=${sub.id}`}

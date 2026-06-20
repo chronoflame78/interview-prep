@@ -13,6 +13,26 @@ import {
 } from "@/components/ui/select";
 import { DIFFICULTIES } from "@/lib/constants";
 
+const difficultyLabel = (d: string) => d.charAt(0) + d.slice(1).toLowerCase();
+
+const DIFFICULTY_ITEMS: Record<string, string> = {
+  all: "All Levels",
+  ...Object.fromEntries(DIFFICULTIES.map((d) => [d, difficultyLabel(d)])),
+};
+
+const SHOW_ONLY_ITEMS: Record<string, string> = {
+  all: "All Questions",
+  defaults: "Default Only",
+  mine: "My Questions",
+};
+
+const SORT_ITEMS: Record<string, string> = {
+  "date:desc": "Newest First",
+  "date:asc": "Oldest First",
+  "difficulty:asc": "Easy to Hard",
+  "difficulty:desc": "Hard to Easy",
+};
+
 export function QuestionFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -57,6 +77,7 @@ export function QuestionFilters() {
       </div>
 
       <Select
+        items={DIFFICULTY_ITEMS}
         value={searchParams.get("difficulty") ?? "all"}
         onValueChange={(v) => updateParam("difficulty", v)}
       >
@@ -67,13 +88,14 @@ export function QuestionFilters() {
           <SelectItem value="all">All Levels</SelectItem>
           {DIFFICULTIES.map((d) => (
             <SelectItem key={d} value={d}>
-              {d.charAt(0) + d.slice(1).toLowerCase()}
+              {difficultyLabel(d)}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
 
       <Select
+        items={SHOW_ONLY_ITEMS}
         value={searchParams.get("showOnly") ?? "all"}
         onValueChange={(v) => updateParam("showOnly", v)}
       >
@@ -88,6 +110,7 @@ export function QuestionFilters() {
       </Select>
 
       <Select
+        items={SORT_ITEMS}
         value={searchParams.get("sort") ?? "date:desc"}
         onValueChange={(v) => updateParam("sort", v)}
       >

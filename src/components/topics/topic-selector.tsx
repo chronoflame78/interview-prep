@@ -27,25 +27,37 @@ interface TopicSelectorProps {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
   type: "topic" | "subtopic";
-  topicId?: string;
+  /** For subtopic selectors: restrict options to subtopics of these topics. */
+  topicIds?: string[];
 }
 
 export function TopicSelector({
   selectedIds,
   onChange,
   type,
-  topicId,
+  topicIds,
 }: TopicSelectorProps) {
   const [open, setOpen] = useState(false);
 
   const { data: topics } = useSWR<TopicWithSubTopics[]>("/api/topics", fetcher);
 
+  // Options shown in the dropdown. For subtopics, restrict to the selected
+  // topics so users only see subtopics that belong to the chosen topic(s).
   const items =
     type === "topic"
       ? topics?.map((t) => ({ id: t.id, name: t.name })) ?? []
       : topics
-          ?.filter((t) => !topicId || t.id === topicId)
+          ?.filter((t) => !topicIds || topicIds.includes(t.id))
           .flatMap((t) => t.subTopics.map((s) => ({ id: s.id, name: s.name }))) ?? [];
+
+  // Full list (unfiltered) used only to resolve names for selected badges,
+  // so already-selected subtopics still render correctly.
+  const allItems =
+    type === "topic"
+      ? items
+      : topics?.flatMap((t) =>
+          t.subTopics.map((s) => ({ id: s.id, name: s.name }))
+        ) ?? [];
 
   const toggle = (id: string) => {
     onChange(
@@ -97,7 +109,7 @@ export function TopicSelector({
       {selectedIds.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {selectedIds.map((id) => {
-            const item = items.find((i) => i.id === id);
+            const item = allItems.find((i) => i.id === id);
             return (
               <Badge key={id} variant="secondary" className="gap-1">
                 {item?.name ?? id}

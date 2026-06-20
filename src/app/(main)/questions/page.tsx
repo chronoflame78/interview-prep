@@ -39,7 +39,10 @@ export default async function QuestionsPage({ searchParams }: Props) {
     )
   ).toString();
   const returnTo = queryString ? `/questions?${queryString}` : "/questions";
-  const newHref = `/questions/new?returnTo=${encodeURIComponent(returnTo)}`;
+  const newParams = new URLSearchParams({ returnTo });
+  if (filters.topicId) newParams.set("topicId", filters.topicId);
+  if (filters.subTopicId) newParams.set("subTopicId", filters.subTopicId);
+  const newHref = `/questions/new?${newParams.toString()}`;
 
   return (
     <div className="space-y-6">

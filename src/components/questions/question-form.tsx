@@ -44,6 +44,11 @@ export function QuestionForm({
     rawReturnTo && rawReturnTo.startsWith("/") ? rawReturnTo : "/questions";
   const [saving, setSaving] = useState(false);
 
+  // When creating a new question, pre-fill the topic/sub-topic the user was
+  // viewing (passed via query params from the Questions list).
+  const prefillTopicId = question ? undefined : searchParams.get("topicId");
+  const prefillSubTopicId = question ? undefined : searchParams.get("subTopicId");
+
   const [formData, setFormData] = useState({
     question: question?.question ?? "",
     questionVn: question?.questionVn ?? "",
@@ -52,8 +57,12 @@ export function QuestionForm({
     answerVn: question?.answerVn ?? "",
     answerCus: question?.answerCus ?? "",
     difficulty: question?.difficulty ?? ("MEDIUM" as Difficulty),
-    topicIds: question?.topics.map((t) => t.topic.id) ?? [],
-    subTopicIds: question?.subTopics.map((s) => s.subTopic.id) ?? [],
+    topicIds:
+      question?.topics.map((t) => t.topic.id) ??
+      (prefillTopicId ? [prefillTopicId] : []),
+    subTopicIds:
+      question?.subTopics.map((s) => s.subTopic.id) ??
+      (prefillSubTopicId ? [prefillSubTopicId] : []),
     relatedQuestionIds:
       question?.relatedTo.map((r) => r.toQuestion.id) ?? [],
     isDefault: question?.isDefault ?? false,
@@ -231,6 +240,7 @@ export function QuestionForm({
               <Label>Sub-Topics</Label>
               <TopicSelector
                 type="subtopic"
+                topicIds={formData.topicIds}
                 selectedIds={formData.subTopicIds}
                 onChange={(ids) => update("subTopicIds", ids)}
               />

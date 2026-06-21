@@ -16,7 +16,7 @@ import { ConditionalSidebarMobileTrigger } from "./conditional-sidebar";
 const navItems = [
   { href: "/questions", label: "Questions" },
   { href: "/topics", label: "Topics" },
-  { href: "/interview", label: "Mock Interview" },
+  // { href: "/interview", label: "Mock Interview" },
 ];
 
 export function Header() {

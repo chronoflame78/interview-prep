@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DifficultyBadge } from "./difficulty-badge";
 import { HighlightedHtml } from "@/components/ui/highlighted-html";
+import { cn } from "@/lib/utils";
 import type { QuestionWithRelations } from "@/types";
 
 function stripHtml(html: string) {
@@ -29,7 +30,6 @@ export function QuestionCard({
   fontSize = "text-sm",
 }: QuestionCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const plainText = stripHtml(question.question);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -85,16 +85,13 @@ export function QuestionCard({
               )}
             </div>
             <div className={`${fontSize} leading-relaxed`}>
-              {expanded ? (
-                <HighlightedHtml
-                  html={question.question}
-                  className="prose dark:prose-invert max-w-none"
-                />
-              ) : (
-                plainText.length > 200
-                  ? plainText.slice(0, 200) + "..."
-                  : plainText
-              )}
+              <HighlightedHtml
+                html={question.question}
+                className={cn(
+                  "prose dark:prose-invert max-w-none",
+                  !expanded && "line-clamp-3"
+                )}
+              />
             </div>
           </div>
           {!readOnly && (

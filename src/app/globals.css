@@ -160,6 +160,74 @@
   content: none !important;
 }
 
+/* Tailwind v4 preflight resets heading sizes and list markers, and no
+   typography plugin is installed, so restore them for rich-text content. */
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose > :last-child {
+  margin-bottom: 0;
+}
+
+.prose h1 {
+  font-size: 1.5em;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.8em 0 0.4em;
+}
+
+.prose h2 {
+  font-size: 1.3em;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0.75em 0 0.4em;
+}
+
+.prose h3 {
+  font-size: 1.1em;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.7em 0 0.35em;
+}
+
+.prose ul,
+.prose ol {
+  margin: 0.5em 0 !important;
+  padding-left: 1.5em !important;
+}
+
+.prose ul {
+  list-style: disc !important;
+}
+
+.prose ol {
+  list-style: decimal !important;
+}
+
+.prose ul ul {
+  list-style: circle !important;
+}
+
+.prose ol ol {
+  list-style: lower-alpha !important;
+}
+
+.prose li {
+  margin: 0.2em 0;
+}
+
+.prose li > p {
+  margin: 0;
+}
+
+.prose blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 1em;
+  margin: 0.5em 0;
+  color: var(--muted-foreground);
+}
+
 @layer base {
 
   .dark .hljs { color: #c9d1d9 }

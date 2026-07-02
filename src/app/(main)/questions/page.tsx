@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { QuestionFilters } from "@/components/questions/question-filters";
+import { ExportQuestionsButton } from "@/components/questions/export-questions-button";
 import { QuestionList } from "@/components/questions/question-list";
 import type { Difficulty } from "@/generated/prisma/enums";
 import type { QuestionFilters as QFilters } from "@/types";
@@ -53,10 +54,15 @@ export default async function QuestionsPage({ searchParams }: Props) {
             {questions.length} question{questions.length !== 1 ? "s" : ""} found
           </p>
         </div>
-        <Link href={newHref} className={cn(buttonVariants(), "gap-2")}>
-          <Plus className="h-4 w-4" />
-          Add Question
-        </Link>
+        <div className="flex gap-2">
+          <Suspense>
+            <ExportQuestionsButton />
+          </Suspense>
+          <Link href={newHref} className={cn(buttonVariants(), "gap-2")}>
+            <Plus className="h-4 w-4" />
+            Add Question
+          </Link>
+        </div>
       </div>
 
       <Suspense fallback={<Skeleton className="h-10 w-full" />}>

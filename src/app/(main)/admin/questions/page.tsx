@@ -55,7 +55,7 @@ export default async function AdminQuestionsPage() {
           Add Default Question
         </Link>
       </div>
-      <QuestionList questions={mapped} />
+      <QuestionList questions={mapped} isAdmin={session.user.role === "ADMIN"} />
     </div>
   );
 }

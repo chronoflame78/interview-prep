@@ -69,7 +69,10 @@ export default async function QuestionsPage({ searchParams }: Props) {
         <QuestionFilters />
       </Suspense>
 
-      <QuestionList questions={questions} />
+      <QuestionList
+        questions={questions}
+        isAdmin={session.user.role === "ADMIN"}
+      />
     </div>
   );
 }

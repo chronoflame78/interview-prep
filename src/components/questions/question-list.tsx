@@ -14,9 +14,10 @@ const FONT_STEPS = ["text-sm", "text-base", "text-lg"] as const;
 interface QuestionListProps {
   questions: QuestionWithRelations[];
   readOnly?: boolean;
+  isAdmin?: boolean;
 }
 
-export function QuestionList({ questions, readOnly }: QuestionListProps) {
+export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps) {
   const router = useRouter();
   const [widthIndex, setWidthIndex] = useState(0);
   const [fontIndex, setFontIndex] = useState(0);
@@ -25,11 +26,12 @@ export function QuestionList({ questions, readOnly }: QuestionListProps) {
     const question = questions.find((q) => q.id === id);
     if (!question) return;
 
-    const endpoint = question.isDefault && question.hasOverride
+    const isOverrideReset = question.isDefault && question.hasOverride;
+    const endpoint = isOverrideReset
       ? `/api/questions/${id}/override`
       : `/api/questions/${id}`;
 
-    const action = question.isDefault && question.hasOverride
+    const action = isOverrideReset
       ? "Reset to default?"
       : "Delete this question?";
 
@@ -37,9 +39,7 @@ export function QuestionList({ questions, readOnly }: QuestionListProps) {
 
     const res = await fetch(endpoint, { method: "DELETE" });
     if (res.ok) {
-      toast.success(
-        question.isDefault ? "Override removed" : "Question deleted"
-      );
+      toast.success(isOverrideReset ? "Override removed" : "Question deleted");
       router.refresh();
     } else {
       toast.error("Something went wrong");
@@ -112,6 +112,7 @@ export function QuestionList({ questions, readOnly }: QuestionListProps) {
             question={q}
             onDelete={handleDelete}
             readOnly={readOnly}
+            isAdmin={isAdmin}
             fontSize={FONT_STEPS[fontIndex]}
           />
         ))}

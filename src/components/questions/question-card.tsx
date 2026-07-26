@@ -20,6 +20,7 @@ interface QuestionCardProps {
   question: QuestionWithRelations;
   onDelete?: (id: string) => void;
   readOnly?: boolean;
+  isAdmin?: boolean;
   fontSize?: string;
 }
 
@@ -27,6 +28,7 @@ export function QuestionCard({
   question,
   onDelete,
   readOnly,
+  isAdmin,
   fontSize = "text-sm",
 }: QuestionCardProps) {
   const [expanded, setExpanded] = useState(false);
@@ -102,7 +104,7 @@ export function QuestionCard({
               >
                 <Edit className="h-4 w-4" />
               </Link>
-              {(!question.isDefault || question.hasOverride) && onDelete && (
+              {(isAdmin || !question.isDefault || question.hasOverride) && onDelete && (
                 <Button
                   variant="ghost"
                   size="icon"

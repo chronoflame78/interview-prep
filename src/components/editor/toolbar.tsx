@@ -14,11 +14,19 @@ import {
   Quote,
   Redo,
   Strikethrough,
+  Table as TableIcon,
   Underline,
   Undo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ToolbarProps {
   editor: Editor;
@@ -47,6 +55,100 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+function TableMenu({ editor }: ToolbarProps) {
+  const inTable = editor.isActive("table");
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            title="Table"
+            className={cn(
+              "hover:bg-accent rounded p-1.5 transition-colors",
+              inTable && "bg-accent text-accent-foreground"
+            )}
+          />
+        }
+      >
+        <TableIcon className="h-4 w-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem
+          onClick={() =>
+            editor
+              .chain()
+              .focus()
+              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+              .run()
+          }
+        >
+          Insert table
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().addRowBefore().run()}
+        >
+          Add row above
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().addRowAfter().run()}
+        >
+          Add row below
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().deleteRow().run()}
+        >
+          Delete row
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().addColumnBefore().run()}
+        >
+          Add column left
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().addColumnAfter().run()}
+        >
+          Add column right
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().deleteColumn().run()}
+        >
+          Delete column
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().toggleHeaderRow().run()}
+        >
+          Toggle header row
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().mergeOrSplit().run()}
+        >
+          Merge / split cells
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={!inTable}
+          onClick={() => editor.chain().focus().deleteTable().run()}
+        >
+          Delete table
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -145,6 +247,10 @@ export function Toolbar({ editor }: ToolbarProps) {
       >
         <Quote className={iconSize} />
       </ToolbarButton>
+
+      <Separator orientation="vertical" className="mx-1 h-6" />
+
+      <TableMenu editor={editor} />
 
       <Separator orientation="vertical" className="mx-1 h-6" />
 

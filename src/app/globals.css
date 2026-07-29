@@ -228,6 +228,68 @@
   color: var(--muted-foreground);
 }
 
+/* Tables (TipTap table extension + rendered question content) */
+.prose .tableWrapper {
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.prose table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0.75em 0;
+  font-size: 0.95em;
+}
+
+.prose .tableWrapper > table {
+  margin: 0;
+}
+
+.prose th,
+.prose td {
+  border: 1px solid var(--border);
+  padding: 0.35em 0.6em;
+  vertical-align: top;
+  text-align: left;
+  position: relative;
+  min-width: 3em;
+}
+
+.prose th {
+  background-color: var(--muted);
+  font-weight: 600;
+}
+
+.prose th > p,
+.prose td > p {
+  margin: 0;
+}
+
+/* Editor-only affordances: cell selection + column resizing */
+.tiptap .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--primary);
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.tiptap .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -2px;
+  bottom: -2px;
+  width: 4px;
+  background-color: var(--primary);
+  pointer-events: none;
+}
+
+.tiptap.resize-cursor {
+  cursor: col-resize;
+}
+
 @layer base {
 
   .dark .hljs { color: #c9d1d9 }

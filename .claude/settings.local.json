@@ -6,7 +6,19 @@
       "Bash(npx prisma *)",
       "Bash(npx tsx *)",
       "Bash(npx tsc *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(npm install *)",
+      "Bash(node -p \"['core','pm','react','starter-kit'].map\\(p=>p+': '+require\\('./node_modules/@tiptap/'+p+'/package.json'\\).version\\).join\\('\\\\n'\\)\")",
+      "Bash(node -p \"JSON.stringify\\(require\\('./package.json'\\).scripts,null,1\\)\")",
+      "Bash(npx eslint *)",
+      "Bash(node -e ' *)",
+      "Bash(node \"C:/Users/HLC_2021/AppData/Local/Temp/claude/C--Users-HLC-2021-Desktop-Code-interview-prep/2c8eb382-939b-4402-bce8-3d3077241e35/scratchpad/td.js\")",
+      "Bash(cp \"C:/Users/HLC_2021/AppData/Local/Temp/claude/C--Users-HLC-2021-Desktop-Code-interview-prep/2c8eb382-939b-4402-bce8-3d3077241e35/scratchpad/td.js\" ./td-tmp.cjs)",
+      "Bash(node ./td-tmp.cjs)",
+      "Bash(rm -f ./td-tmp.cjs)",
+      "Bash(node paste-test.mjs)",
+      "Bash(rm -f paste-test.mjs)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

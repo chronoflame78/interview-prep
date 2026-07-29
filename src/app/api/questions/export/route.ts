@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import TurndownService from "turndown";
+import { tables } from "turndown-plugin-gfm";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestionsForUser } from "@/lib/questions";
@@ -126,6 +127,19 @@ export async function GET(req: Request) {
     headingStyle: "atx",
     codeBlockStyle: "fenced",
     bulletListMarker: "-",
+  });
+  // Turndown drops <table> markup by default; emit GFM tables instead
+  turndown.use(tables);
+  // Editor cells wrap their text in <p>, which the plugin's cell rule would
+  // leave as blank lines and break the row — flatten each cell to one line.
+  turndown.addRule("tableCell", {
+    filter: ["th", "td"],
+    replacement: (content, node) => {
+      const text = content.trim().replace(/\|/g, "\\|").replace(/\n+/g, "<br>");
+      const siblings = node.parentNode?.childNodes ?? [];
+      const isFirst = Array.prototype.indexOf.call(siblings, node) === 0;
+      return `${isFirst ? "| " : " "}${text} |`;
+    },
   });
 
   const markdown = buildMarkdown(questions, lang, includeAnswers, turndown);

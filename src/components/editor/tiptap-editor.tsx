@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import Placeholder from "@tiptap/extension-placeholder";
+import { TableKit } from "@tiptap/extension-table";
 import { common, createLowlight } from "lowlight";
 import { cn } from "@/lib/utils";
 import { Toolbar } from "./toolbar";
@@ -36,6 +37,9 @@ export function TipTapEditor({
         HTMLAttributes: { class: "bg-muted rounded-md p-4 font-mono text-sm" },
       }),
       Placeholder.configure({ placeholder }),
+      TableKit.configure({
+        table: { resizable: true, renderWrapper: true },
+      }),
     ],
     content,
     editable,

@@ -43,6 +43,10 @@ export function TipTapEditor({
     ],
     content,
     editable,
+    // Without this, ProseMirror applies HTML's whitespace-collapsing rules when
+    // it parses saved content, so "hello   world" comes back as "hello world".
+    // View mode renders with `white-space: pre-wrap`, so parse to match it.
+    parseOptions: { preserveWhitespace: "full" },
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());

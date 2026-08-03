@@ -18,7 +18,8 @@
       "Bash(rm -f ./td-tmp.cjs)",
       "Bash(node paste-test.mjs)",
       "Bash(rm -f paste-test.mjs)",
-      "Bash(npm uninstall *)"
+      "Bash(npm uninstall *)",
+      "Bash(grep -nP \"<p>[^<]*$\" prisma/seed.ts)"
     ]
   }
 }

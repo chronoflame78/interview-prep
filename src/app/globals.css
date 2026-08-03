@@ -170,6 +170,22 @@
   margin-bottom: 0;
 }
 
+/* TipTap injects `white-space: pre-wrap` on the editor root and renders an
+   empty paragraph as `<p><br></p>`, so blank lines and runs of spaces are
+   visible while editing. The stored HTML has plain `<p></p>` and no such
+   rule, so match the editor when rendering it back. */
+.prose p,
+.prose h1,
+.prose h2,
+.prose h3 {
+  white-space: pre-wrap;
+}
+
+.prose p:empty::before {
+  content: "";
+  display: inline-block;
+}
+
 .prose h1 {
   font-size: 1.5em;
   font-weight: 700;

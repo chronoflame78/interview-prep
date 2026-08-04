@@ -28,6 +28,7 @@ model User {
   sessions          Session[]
   createdQuestions   Question[]
   questionOverrides  UserQuestionOverride[]
+  questionStars      UserQuestionStar[]
   createdTopics      Topic[]
   createdSubTopics   SubTopic[]
   interviewSessions  InterviewSession[]
@@ -142,6 +143,7 @@ model Question {
   topics         QuestionTopic[]
   subTopics      QuestionSubTopic[]
   overrides      UserQuestionOverride[]
+  stars          UserQuestionStar[]
   interviewTurns InterviewTurn[]
   relatedTo      QuestionRelation[]     @relation("RelatedFrom")
   relatedFrom    QuestionRelation[]     @relation("RelatedTo")
@@ -207,6 +209,21 @@ model UserQuestionOverride {
 
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   originalQuestion Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId])
+}
+
+// Per-user "important" marker. Like UserQuestionOverride, this keeps the flag
+// off the shared Question so starring a default never affects other users.
+model UserQuestionStar {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, questionId])
   @@index([userId])

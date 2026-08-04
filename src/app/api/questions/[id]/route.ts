@@ -57,9 +57,13 @@ export async function PUT(
     (rid: string) => !!rid && rid !== id
   );
 
+  // Only admins may toggle the default flag; for everyone else keep it as-is.
+  const isAdmin = session.user.role === "ADMIN";
+
   const updated = await prisma.question.update({
     where: { id },
     data: {
+      ...(isAdmin ? { isDefault: parsed.data.isDefault } : {}),
       question: parsed.data.question,
       questionVn: parsed.data.questionVn,
       questionCus: parsed.data.questionCus,

@@ -31,9 +31,16 @@ export default async function AdminQuestionsPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const stars = await prisma.userQuestionStar.findMany({
+    where: { userId: session.user.id },
+    select: { questionId: true },
+  });
+  const starredIds = new Set(stars.map((s) => s.questionId));
+
   const mapped: QuestionWithRelations[] = questions.map((q) => ({
     ...q,
     hasOverride: false,
+    isImportant: starredIds.has(q.id),
   }));
 
   return (

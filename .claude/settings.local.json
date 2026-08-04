@@ -19,7 +19,10 @@
       "Bash(node paste-test.mjs)",
       "Bash(rm -f paste-test.mjs)",
       "Bash(npm uninstall *)",
-      "Bash(grep -nP \"<p>[^<]*$\" prisma/seed.ts)"
+      "Bash(grep -nP \"<p>[^<]*$\" prisma/seed.ts)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json)",
+      "PowerShell(npx prisma migrate status)",
+      "PowerShell(npx next build 2>&1 | Select-Object -Last 40)"
     ]
   }
 }

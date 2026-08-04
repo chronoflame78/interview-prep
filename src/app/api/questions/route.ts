@@ -21,6 +21,7 @@ export async function GET(req: Request) {
     showOnly:
       (searchParams.get("showOnly") as QuestionFilters["showOnly"]) ??
       undefined,
+    important: searchParams.get("important") === "1",
     sort: searchParams.get("sort") ?? undefined,
     page: searchParams.get("page") ? Number(searchParams.get("page")) : 1,
     limit: searchParams.get("limit") ? Number(searchParams.get("limit")) : 50,
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       answerVn: parsed.data.answerVn,
       answerCus: parsed.data.answerCus,
       difficulty: parsed.data.difficulty,
-      isDefault: isAdmin && body.isDefault === true,
+      isDefault: isAdmin && parsed.data.isDefault,
       createdBy: session.user.id,
       domainId: currentUser?.activeDomainId,
       topics: {

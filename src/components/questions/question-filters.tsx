@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState, useTransition } from "react";
-import { Search } from "lucide-react";
+import { Search, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DIFFICULTIES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 const difficultyLabel = (d: string) => d.charAt(0) + d.slice(1).toLowerCase();
 
@@ -63,6 +65,8 @@ export function QuestionFilters() {
     },
     [updateParam]
   );
+
+  const importantOnly = searchParams.get("important") === "1";
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -124,6 +128,26 @@ export function QuestionFilters() {
           <SelectItem value="difficulty:desc">Hard to Easy</SelectItem>
         </SelectContent>
       </Select>
+
+      <Button
+        variant={importantOnly ? "secondary" : "outline"}
+        className="gap-2"
+        aria-pressed={importantOnly}
+        onClick={() => updateParam("important", importantOnly ? null : "1")}
+        title={
+          importantOnly
+            ? "Show all questions"
+            : "Show only important questions"
+        }
+      >
+        <Star
+          className={cn(
+            "h-4 w-4",
+            importantOnly && "fill-amber-400 text-amber-500"
+          )}
+        />
+        Important
+      </Button>
     </div>
   );
 }

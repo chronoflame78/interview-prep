@@ -28,6 +28,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
     subTopicId: params.subTopicId,
     search: params.search,
     showOnly: params.showOnly as QFilters["showOnly"],
+    important: params.important === "1",
     sort: params.sort ?? "date:desc",
     page: params.page ? Number(params.page) : 1,
   };

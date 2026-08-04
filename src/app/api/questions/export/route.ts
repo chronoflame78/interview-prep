@@ -106,6 +106,7 @@ export async function GET(req: Request) {
     showOnly:
       (searchParams.get("showOnly") as QuestionFilters["showOnly"]) ??
       undefined,
+    important: searchParams.get("important") === "1",
     sort: searchParams.get("sort") ?? "date:desc",
     // Export everything matching the filters, not just the visible page
     page: 1,

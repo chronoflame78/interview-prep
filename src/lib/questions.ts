@@ -7,7 +7,7 @@ export async function getQuestionsForUser(
   filters: QuestionFilters = {},
   domainId?: string | null
 ): Promise<QuestionWithRelations[]> {
-  const [questions, overrides] = await Promise.all([
+  const [questions, overrides, stars] = await Promise.all([
     prisma.question.findMany({
       where: {
         ...(domainId ? { domainId } : {}),
@@ -32,9 +32,14 @@ export async function getQuestionsForUser(
     prisma.userQuestionOverride.findMany({
       where: { userId },
     }),
+    prisma.userQuestionStar.findMany({
+      where: { userId },
+      select: { questionId: true },
+    }),
   ]);
 
   const overrideMap = new Map(overrides.map((o) => [o.questionId, o]));
+  const starredIds = new Set(stars.map((s) => s.questionId));
 
   let merged = questions
     .map((q) => {
@@ -55,6 +60,7 @@ export async function getQuestionsForUser(
         createdAt: q.createdAt,
         updatedAt: q.updatedAt,
         hasOverride: !!override,
+        isImportant: starredIds.has(q.id),
         topics: q.topics,
         subTopics: q.subTopics,
         relatedTo: q.relatedTo,
@@ -86,6 +92,9 @@ export async function getQuestionsForUser(
         q.answerVn?.toLowerCase().includes(term)
     );
   }
+  if (filters.important) {
+    merged = merged.filter((q) => q.isImportant);
+  }
   if (filters.showOnly === "mine") {
     merged = merged.filter((q) => !q.isDefault);
   } else if (filters.showOnly === "defaults") {
@@ -113,7 +122,7 @@ export async function getQuestionsForUser(
 }
 
 export async function getQuestionForUser(userId: string, questionId: string) {
-  const [question, override] = await Promise.all([
+  const [question, override, star] = await Promise.all([
     prisma.question.findUnique({
       where: { id: questionId },
       include: {
@@ -130,6 +139,10 @@ export async function getQuestionForUser(userId: string, questionId: string) {
     }),
     prisma.userQuestionOverride.findUnique({
       where: { userId_questionId: { userId, questionId } },
+    }),
+    prisma.userQuestionStar.findUnique({
+      where: { userId_questionId: { userId, questionId } },
+      select: { id: true },
     }),
   ]);
 
@@ -149,6 +162,7 @@ export async function getQuestionForUser(userId: string, questionId: string) {
     createdAt: question.createdAt,
     updatedAt: question.updatedAt,
     hasOverride: !!override,
+    isImportant: !!star,
     topics: question.topics,
     subTopics: question.subTopics,
     relatedTo: question.relatedTo,

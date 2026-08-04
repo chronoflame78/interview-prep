@@ -14,6 +14,7 @@ export type QuestionWithRelations = {
   createdAt: Date;
   updatedAt: Date;
   hasOverride: boolean;
+  isImportant: boolean;
   topics: { topic: { id: string; name: string } }[];
   subTopics: { subTopic: { id: string; name: string } }[];
   relatedTo: {
@@ -43,6 +44,7 @@ export type QuestionFilters = {
   subTopicId?: string;
   search?: string;
   showOnly?: "all" | "mine" | "defaults";
+  important?: boolean;
   sort?: string;
   page?: number;
   limit?: number;

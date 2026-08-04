@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AArrowDown, AArrowUp, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "./question-card";
@@ -19,6 +19,8 @@ interface QuestionListProps {
 
 export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const filteringImportant = searchParams.get("important") === "1";
   const [widthIndex, setWidthIndex] = useState(0);
   const [fontIndex, setFontIndex] = useState(0);
 
@@ -44,6 +46,12 @@ export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps
     } else {
       toast.error("Something went wrong");
     }
+  }
+
+  function handleToggleImportant() {
+    // Only the important-filtered view changes membership when a star flips;
+    // elsewhere the card already renders its own new state.
+    if (filteringImportant) router.refresh();
   }
 
   if (questions.length === 0) {
@@ -111,6 +119,7 @@ export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps
             key={q.id}
             question={q}
             onDelete={handleDelete}
+            onToggleImportant={handleToggleImportant}
             readOnly={readOnly}
             isAdmin={isAdmin}
             fontSize={FONT_STEPS[fontIndex]}

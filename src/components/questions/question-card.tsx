@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronDown, ChevronUp, Edit, Pencil, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { ChevronDown, ChevronUp, Edit, Pencil, Star, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -19,6 +20,7 @@ function stripHtml(html: string) {
 interface QuestionCardProps {
   question: QuestionWithRelations;
   onDelete?: (id: string) => void;
+  onToggleImportant?: (id: string, important: boolean) => void;
   readOnly?: boolean;
   isAdmin?: boolean;
   fontSize?: string;
@@ -27,11 +29,14 @@ interface QuestionCardProps {
 export function QuestionCard({
   question,
   onDelete,
+  onToggleImportant,
   readOnly,
   isAdmin,
   fontSize = "text-sm",
 }: QuestionCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [important, setImportant] = useState(question.isImportant);
+  const [starPending, setStarPending] = useState(false);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -39,6 +44,25 @@ export function QuestionCard({
     ? `${pathname}?${searchParams.toString()}`
     : pathname;
   const editHref = `/questions/${question.id}/edit?returnTo=${encodeURIComponent(currentUrl)}`;
+
+  async function toggleImportant() {
+    const next = !important;
+    setImportant(next);
+    setStarPending(true);
+    try {
+      const res = await fetch(`/api/questions/${question.id}/star`, {
+        method: next ? "POST" : "DELETE",
+      });
+      if (!res.ok) throw new Error();
+      // Keep the list in sync — the card drops out while filtering by important.
+      onToggleImportant?.(question.id, next);
+    } catch {
+      setImportant(!next);
+      toast.error("Failed to update");
+    } finally {
+      setStarPending(false);
+    }
+  }
 
   useEffect(() => {
     const anchorId = `q-${question.id}`;
@@ -96,8 +120,33 @@ export function QuestionCard({
               />
             </div>
           </div>
-          {!readOnly && (
-            <div className="flex shrink-0 gap-1">
+          {readOnly ? (
+            important && (
+              <Star
+                aria-label="Important"
+                className="h-4 w-4 shrink-0 fill-amber-400 text-amber-500"
+              />
+            )
+          ) : (
+            <div className="flex shrink-0 items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={toggleImportant}
+                disabled={starPending}
+                aria-pressed={important}
+                title={important ? "Remove from important" : "Mark as important"}
+              >
+                <Star
+                  className={cn(
+                    "h-4 w-4",
+                    important
+                      ? "fill-amber-400 text-amber-500"
+                      : "text-muted-foreground"
+                  )}
+                />
+              </Button>
               <Link
                 href={editHref}
                 className="hover:bg-accent inline-flex h-8 w-8 items-center justify-center rounded-md"

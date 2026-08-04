@@ -11,6 +11,7 @@ export const questionSchema = z.object({
   topicIds: z.array(z.string()).default([]),
   subTopicIds: z.array(z.string()).default([]),
   relatedQuestionIds: z.array(z.string()).default([]),
+  isDefault: z.boolean().default(false),
 });
 
 export const overrideSchema = z.object({

@@ -22,7 +22,10 @@
       "Bash(grep -nP \"<p>[^<]*$\" prisma/seed.ts)",
       "PowerShell(npx tsc --noEmit -p tsconfig.json)",
       "PowerShell(npx prisma migrate status)",
-      "PowerShell(npx next build 2>&1 | Select-Object -Last 40)"
+      "PowerShell(npx next build 2>&1 | Select-Object -Last 40)",
+      "Bash(node \"C:/Users/HLC_2021/AppData/Local/Temp/claude/C--Users-HLC-2021-Desktop-Code-interview-prep/ba84fb7b-7dcf-4c73-a185-e6ba6f6b5eb0/scratchpad/hl.mjs\")",
+      "Bash(node *)",
+      "Bash(npx next *)"
     ]
   }
 }

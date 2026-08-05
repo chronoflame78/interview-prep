@@ -34,6 +34,13 @@ export function TipTapEditor({
       }),
       CodeBlockLowlight.configure({
         lowlight,
+        // Without this the extension falls back to `highlightAuto`, which
+        // mis-detects short snippets and tokenizes them as another language.
+        // The `typescript` grammar extends `javascript`, so it is a superset:
+        // plain JS highlights identically, and TS-only syntax (`interface`,
+        // `type`, `enum`, `implements`, `readonly`, type annotations) is
+        // picked up too. Blocks declaring `language-*` still win.
+        defaultLanguage: "typescript",
         HTMLAttributes: { class: "bg-muted rounded-md p-4 font-mono text-sm" },
       }),
       Placeholder.configure({ placeholder }),

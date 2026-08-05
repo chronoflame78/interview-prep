@@ -308,6 +308,8 @@
 
 @layer base {
 
+  /* Light-theme tokens come from the `highlight.js/styles/github.css` import
+     at the top of this file; these override it when `.dark` is active. */
   .dark .hljs { color: #c9d1d9 }
   .dark .hljs-doctag,
   .dark .hljs-keyword,

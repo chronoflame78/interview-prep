@@ -4,7 +4,9 @@ import type { Editor } from "@tiptap/react";
 import {
   Bold,
   Braces,
+  ChevronDown,
   Code,
+  FileCode,
   Heading1,
   Heading2,
   Heading3,
@@ -24,6 +26,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -31,6 +35,22 @@ import {
 interface ToolbarProps {
   editor: Editor;
 }
+
+// Values must be names or aliases lowlight has registered, otherwise the
+// code-block extension silently falls back to `highlightAuto`. TypeScript is
+// the extension's `defaultLanguage` and its grammar is a superset of
+// JavaScript's, so it covers both.
+const CODE_LANGUAGES = [
+  { value: "typescript", label: "TypeScript" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "json", label: "JSON" },
+  { value: "sql", label: "SQL" },
+  { value: "bash", label: "Bash" },
+  { value: "html", label: "HTML" },
+  { value: "css", label: "CSS" },
+  { value: "python", label: "Python" },
+  { value: "java", label: "Java" },
+] as const;
 
 function ToolbarButton({
   onClick,
@@ -55,6 +75,58 @@ function ToolbarButton({
     >
       {children}
     </button>
+  );
+}
+
+function LanguageMenu({ editor }: ToolbarProps) {
+  const inCodeBlock = editor.isActive("codeBlock");
+  // Falls back to the extension's `defaultLanguage` for blocks saved before
+  // the language attribute existed.
+  const current =
+    (editor.getAttributes("codeBlock").language as string | null) ??
+    "typescript";
+  const label =
+    CODE_LANGUAGES.find((l) => l.value === current)?.label ?? current;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            title="Code block language"
+            disabled={!inCodeBlock}
+            className={cn(
+              "hover:bg-accent flex items-center gap-1 rounded px-2 py-1.5 text-xs transition-colors",
+              "disabled:pointer-events-none disabled:opacity-50",
+              inCodeBlock && "bg-accent text-accent-foreground"
+            )}
+          />
+        }
+      >
+        <FileCode className="h-4 w-4" />
+        <span>{inCodeBlock ? label : "Language"}</span>
+        <ChevronDown className="h-3 w-3" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuRadioGroup
+          value={current}
+          onValueChange={(value) =>
+            editor
+              .chain()
+              .focus()
+              .updateAttributes("codeBlock", { language: value as string })
+              .run()
+          }
+        >
+          {CODE_LANGUAGES.map((language) => (
+            <DropdownMenuRadioItem key={language.value} value={language.value}>
+              {language.label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -250,6 +322,7 @@ export function Toolbar({ editor }: ToolbarProps) {
 
       <Separator orientation="vertical" className="mx-1 h-6" />
 
+      <LanguageMenu editor={editor} />
       <TableMenu editor={editor} />
 
       <Separator orientation="vertical" className="mx-1 h-6" />

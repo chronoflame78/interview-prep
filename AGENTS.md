@@ -4,6 +4,18 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Features and changes
+
+Existing features are documented under `docs/features/<name>/{requirements,design,testcases}.md`. **Read the relevant set before changing that area** — and keep it true.
+
+Invoke the `feature-spec` skill BEFORE writing implementation code when either is true:
+- the change adds a new user-visible capability, data model, API surface, or integration;
+- the change contradicts something `docs/features/` currently states — **however small the diff**.
+
+Judge by documentation impact, not diff size. Several known bugs are deliberately pinned in those docs as current behavior, so fixing them is an amendment, not an exempt fix.
+
+Exempt: typo fixes, styling adjustments, config changes, crash fixes the docs never claimed worked, and refactors that leave documented behavior and structure intact.
+
 # Architecture
 
 Full-stack interview-prep app. Admins seed default questions; users add private questions, customize defaults non-destructively, and share their personalized sets. Live: https://leonguyen-interview-prep.vercel.app

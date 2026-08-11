@@ -12,6 +12,8 @@ Invoke the `feature-spec` skill BEFORE writing implementation code when either i
 - the change adds a new user-visible capability, data model, API surface, or integration;
 - the change contradicts something `docs/features/` currently states — **however small the diff**.
 
+The skill is staged: `requirements.md` → review → `design.md` → review → `testcases.md` → review → implement. One document per turn; wait for explicit approval between each.
+
 Judge by documentation impact, not diff size. Several known bugs are deliberately pinned in those docs as current behavior, so fixing them is an amendment, not an exempt fix.
 
 Exempt: typo fixes, styling adjustments, config changes, crash fixes the docs never claimed worked, and refactors that leave documented behavior and structure intact.

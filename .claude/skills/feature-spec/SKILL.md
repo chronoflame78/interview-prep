@@ -110,6 +110,21 @@ behavior · important edge cases · non-goals · acceptance criteria.
 - Mark anything genuinely unclear as **Needs confirmation**. Do not silently invent product
   behavior — an invented requirement that reaches implementation is worse than a flagged gap.
 
+### 🛑 Gate 1 — stop here
+
+Write **only** `requirements.md`. Do not create `design.md` or `testcases.md` yet, and do not
+sketch the design in the summary.
+
+Report:
+
+- the file created or amended
+- what the feature will and will not do, in a few lines
+- assumptions made
+- every **Needs confirmation** item, asked plainly as a question
+- anything in the existing system this will collide with
+
+Then wait for approval before starting Step 3.
+
 ## Step 3 — Write `design.md`
 
 How the feature integrates into the existing system.
@@ -125,6 +140,23 @@ with existing features · important technical decisions and trade-offs.
 - Use Mermaid diagrams where they genuinely clarify a flow. Skip them where prose is clearer.
 - Prefer the **simplest design** that satisfies the requirements and matches the current codebase.
 - Do not redesign unrelated parts of the system.
+- Design only against **approved** requirements. If the design needs behavior that Step 2 did not
+  cover, that is a requirements change — see *When a later step invalidates an earlier one*.
+
+### 🛑 Gate 2 — stop here
+
+Write **only** `design.md`. Do not create `testcases.md` yet.
+
+Report:
+
+- the file created or amended
+- the approach in a few lines, and the main alternative rejected
+- what is reused versus what is new
+- data-model or migration impact
+- notable risks, trade-offs, or new dependencies
+- anything the design work revealed as wrong or missing in the approved requirements
+
+Then wait for approval before starting Step 4.
 
 ## Step 4 — Write `testcases.md`
 
@@ -153,9 +185,33 @@ no automated tests** (`package.json` has no `test` script; no `*.test.*` or `*.s
 If the feature warrants automated tests, say so explicitly in the document — including what would
 need to be installed — rather than assuming a harness is available.
 
+### 🛑 Gate 3 — stop here
+
+Report:
+
+- the file created or amended
+- a coverage map: every requirement ID → the test case IDs covering it
+- any requirement left uncovered, and why
+- which cases need a harness that does not exist yet
+
+Then wait for approval before writing any implementation code.
+
+## When a later step invalidates an earlier one
+
+Writing a design regularly exposes a requirement that is unimplementable, ambiguous, or simply
+wrong. Writing test cases exposes requirements that cannot be verified as written. This is the
+staged workflow doing its job, not a failure.
+
+When it happens: **stop and say so at the next gate.** Do not quietly design around an approved
+requirement, and do not silently edit an approved document to match what you have since decided.
+
+State what changed, amend the earlier document, and re-confirm that amendment together with the
+current step. An approved document that no longer matches the plan is worse than no document,
+because it will be trusted.
+
 ## Steps 2–4 when amending an existing feature
 
-Same three documents, same approval gate — but edit rather than rewrite. Read the existing set in
+Same three documents, same three gates — but edit rather than rewrite. Read the existing set in
 full first; a change described against a misremembered baseline is worse than no change.
 
 **Amend, don't replace.** Keep untouched sections untouched. A reviewer should be able to diff the
@@ -181,42 +237,36 @@ that contradicts itself.
 change resolves an item — then strike that item and note the change that fixed it. Do not add
 aspirational entries there.
 
-## Step 5 — Stop for human review
+## How the gates work
 
-**This is a mandatory approval gate** for the full workflow — new capabilities and substantial
-changes. It does not apply to the small-fix-plus-amendment path in *When this applies*, where the fix
-and the corrected lines land together and the summary just reports what moved.
+**One document per turn.** Steps 2, 3, and 4 each end in a stop. Write that step's document, report,
+and wait. Do not run ahead to the next document because the current one felt straightforward.
 
-After creating or amending the three documents, STOP. Do not implement the feature yet.
+At every gate, until the final approval:
 
-Do not: modify application code · add production components · add API routes · add database
-migrations · install dependencies · write automated tests · refactor unrelated code.
+> Do not: modify application code · add production components · add API routes · add database
+> migrations · install dependencies · write automated tests · refactor unrelated code.
 
-Provide a short summary containing:
+Approval must be explicit — "looks good", "approved", "continue". Silence is not approval, and
+neither is a question about the document you just produced.
 
-- documents created or amended
-- main design decisions
-- assumptions made
-- questions requiring confirmation
-- notable risks or dependencies
+The gates apply to the **full workflow only** — new capabilities and substantial changes. The
+small-fix-plus-amendment path in *When this applies* has no gate: the fix and the corrected lines
+land together and the summary reports what moved.
 
 **When amending, state the change as a diff, not a description.** A reviewer cannot approve "updated
-requirements.md". List what moved:
+requirements.md". List what moved, at each gate, for that gate's file:
 
 ```
 docs/features/questions-management/
   requirements.md  + Q-R59, Q-R60 (cursor pagination)
                    ~ Q-R40 (page size now caller-controlled)
                    − Q-X3 (no pagination UI) — resolved by this change
-  design.md        ~ read core, API surface; + new types
-  testcases.md     + TC-Q70..TC-Q74   ~ TC-Q33 (cap no longer applies)
 ```
 
-Then wait. Implementation begins only on explicit approval — for example, "Approved. Implement it."
+## Step 5 — Implement, after the final approval
 
-## Step 6 — Implement, after approval
-
-Once approved:
+Only after Gate 3 has been approved:
 
 1. Re-read all three documents. Treat them as the source of truth.
 2. Implement according to the approved requirements and design.

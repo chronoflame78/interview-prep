@@ -13,8 +13,8 @@ Questions are the core content unit. Each question carries up to three language 
 Vietnamese, Custom) for both the question and the answer, a difficulty level, links to topics and
 sub-topics, and links to related questions. Questions are either **defaults** (created by an admin,
 visible to everyone in the domain) or **private** (created by a user, visible only to them). Users
-browse a filtered list, expand cards to read answers, star questions as important, and export the
-current selection to Markdown.
+browse a filtered list, choose which language variant the cards display, expand cards to read
+answers, star questions as important, and export the current selection to Markdown.
 
 ## Purpose / user problem
 
@@ -67,11 +67,25 @@ themselves; the multilingual variants support preparing in more than one languag
 - **Q-R27** — Three variants exist for both question and answer: English (`question` / `answer`), Vietnamese (`questionVn` / `answerVn`), Custom (`questionCus` / `answerCus`).
 - **Q-R28** — The editor exposes them as three tabs (English / Vietnamese / Custom), each containing a question editor and an answer editor.
 - **Q-R29** — Empty Vietnamese, Custom, and answer fields are submitted as `null` rather than `""`.
-- **Q-R30** — The list and card UI always display the **English** variant. There is no language switcher on the reading surface — the variants are reachable only through the editor and the export.
+- **Q-R30** — The list and card UI display the variant the reader selects (see *Language display on the reading surface* below). English is the default, and each field falls back to English when the selected variant is empty.
+
+### Language display on the reading surface
+
+- **Q-R59** — The reading surface offers a language selector with the same three options as the editor and the export: English, Vietnamese, Custom.
+- **Q-R60** — The selection is held in the URL query string as `lang`, using the values the export already uses: `en` | `vn` | `cus`. An absent, empty, or unrecognized value is treated as `en`.
+- **Q-R61** — Because the selection lives in the URL, it survives a refresh, is shareable as a link, and is restored by back/forward navigation. It is not written to the database and is not a per-user profile setting.
+- **Q-R62** — On `/questions` the selector sits in the filter row alongside Difficulty, Show, and Sort, and behaves like the other filter controls: changing it pushes a new URL and clears the `page` parameter (Q-R38).
+- **Q-R63** — `/admin/questions` and `/share/[slug]` render the same card list but have no filter row, so on those two pages the selector sits in the card-list toolbar beside the font-size and width controls, writing the same `lang` parameter. **Needs confirmation** — the alternative is to leave those pages English-only.
+- **Q-R64** — The selection applies to the question body (collapsed and expanded) and to the answer revealed when a card is expanded.
+- **Q-R65** — Fallback is per field, not per card: a question with Vietnamese text but no Vietnamese answer shows the Vietnamese question and the English answer. This matches the export rule (Q-R55).
+- **Q-R66** — The selection is display-only. It never mutates stored content, and it does not change which questions are shown, in what order, or whether they match the active filters.
+- **Q-R67** — Override merging happens first: for a customized default the variant is taken from the user's effective (override-merged) content, not from the original row (Q-R4).
+- **Q-R68** — Editing, starring, deleting, and exporting are unaffected. The pencil icon still opens the full three-tab editor whatever language is displayed.
+- **Q-R69** — Related-question titles listed inside an expanded card follow the selection, with the same English fallback. **Needs confirmation** — this is the only item here that needs a data-shape change, because the related-question query currently selects the English title alone.
 
 ### Listing, filtering, sorting
 
-- **Q-R31** — `/questions` and `GET /api/questions` accept: `difficulty`, `topicId`, `subTopicId`, `search`, `showOnly`, `important`, `sort`, `page`, `limit`.
+- **Q-R31** — `/questions` and `GET /api/questions` accept: `difficulty`, `topicId`, `subTopicId`, `search`, `showOnly`, `important`, `sort`, `page`, `limit`. The page additionally accepts `lang` (Q-R60) as a pure display parameter — it is not a filter, is never passed to `getQuestionsForUser`, and is ignored by the API.
 - **Q-R32** — `showOnly` accepts `all` (default), `mine` (non-defaults only), `defaults` (defaults only).
 - **Q-R33** — `important=1` restricts to starred questions.
 - **Q-R34** — `sort` accepts `date:asc`, `date:desc`, `difficulty:asc`, `difficulty:desc`. The page defaults to `date:desc`.
@@ -84,8 +98,8 @@ themselves; the multilingual variants support preparing in more than one languag
 
 ### Reading
 
-- **Q-R41** — Each question renders as a collapsed card showing difficulty badge, a "Customized" badge if overridden, a "Private" badge if not a default, and the question body clamped to three lines.
-- **Q-R42** — Expanding a card reveals the answer (if present) and the list of related questions.
+- **Q-R41** — Each question renders as a collapsed card showing difficulty badge, a "Customized" badge if overridden, a "Private" badge if not a default, and the question body in the selected language (Q-R59) clamped to three lines.
+- **Q-R42** — Expanding a card reveals the answer in the selected language (if present) and the list of related questions.
 - **Q-R43** — Clicking a related question navigates to `/questions#q-<id>` and dispatches a `question:focus` event; the target card expands and scrolls into view.
 - **Q-R44** — A card also auto-expands and scrolls if the page loads with its anchor in the URL hash.
 - **Q-R45** — The list has controls to cycle display width (100% → 900px → 700px) and font size (`text-sm` → `text-base` → `text-lg`). These are component state only and are not persisted.
@@ -200,10 +214,14 @@ themselves; the multilingual variants support preparing in more than one languag
 - **Q-X11** — `QuestionRelation` is directional but the selector offers no indication of that, so "related" links appear on only one of the two questions.
 - **Q-X12** — Passing a non-existent `topicId` to `POST /api/questions` raises a foreign-key error that is not caught, producing an unhandled `500`.
 - **Q-X13** — The `important` query flag is computed as `searchParams.get("important") === "1"`, so it is always a boolean; a value of `false` simply skips the filter.
-- **Q-X14** — Width and font-size preferences reset on every navigation — they live in `useState`, unlike the topic ordering which is persisted to `localStorage`.
+- **Q-X14** — Width and font-size preferences reset on every navigation — they live in `useState`, unlike the topic ordering which is persisted to `localStorage` and unlike the language selection which is held in the URL (Q-R61).
 - **Q-X15** — The export's `limit` is `Number.MAX_SAFE_INTEGER`, so a very large collection is fully materialized in memory and converted to Markdown in a single request. No streaming, no cap.
 - **Q-X16** — `/admin/questions` bypasses `getQuestionsForUser` entirely, querying Prisma directly and hard-coding `hasOverride: false`. An admin's own overrides on default questions are therefore invisible on that page.
 - **Q-X17** — The card's delete button is hidden for a non-admin viewing an un-customized default, but the underlying `DELETE` endpoint would return `403` if called directly — the UI and API agree, but only because the button is hidden.
+- **Q-X18** — **Search does not follow the displayed language.** Q-R36 matches `question`, `questionVn`, `answer`, and `answerVn` whatever `lang` is set to. Reading in Custom, a user can get hits whose Custom text does not contain the term, and a search for Custom-only wording still finds nothing.
+- **Q-X19** — **The export language is chosen separately.** The export button copies the current query string and overwrites `lang` with the variant picked from its own menu, so the exported file's language is whatever that menu says, not what is on screen.
+- **Q-X20** — **A shared profile link can carry a language.** `/share/<slug>?lang=vn` opens the shared collection in Vietnamese; without the parameter the viewer sees English regardless of the owner's own reading choice, because nothing about the selection is stored per user.
+- **Q-X21** — **A whitespace-only variant is not empty.** Fallback tests for nullish or empty, so a variant holding `"<p></p>"` — what an emptied rich-text editor saves — renders as a blank card body instead of falling back to English. This mirrors Q-V3 on the write side.
 
 ## Non-goals / not supported
 
@@ -211,7 +229,9 @@ themselves; the multilingual variants support preparing in more than one languag
 - Full-text or fuzzy search; search is a plain case-insensitive substring test on raw HTML.
 - Bulk operations (bulk delete, bulk tag, bulk difficulty change).
 - Import of questions (export is one-way).
-- A language switcher on the reading surface.
+- A per-user default reading language stored on the profile — the choice lives in the URL only (Q-R61).
+- Translating the interface itself: badges, buttons, filter labels, and headings stay in English; only question content changes.
+- Automatic translation between variants, or any indication that a variant is missing beyond the silent English fallback.
 - Question version history, drafts, or soft delete.
 - Attachments or images beyond what is pasted into the rich-text HTML.
 - Reordering questions manually.
@@ -231,4 +251,7 @@ themselves; the multilingual variants support preparing in more than one languag
 - **AC-8** — Export with `lang=vn` produces Markdown using Vietnamese text where present and English where the Vietnamese variant is empty.
 - **AC-9** — Export respects the active filters and is not truncated to the displayed page.
 - **AC-10** — Editing a question replaces its topic set: a question saved with `topicIds: []` ends up with no topics.
+- **AC-11** — On `/questions?lang=vn`, a question with Vietnamese text shows it and a question without Vietnamese text shows its English text, in the same list.
+- **AC-12** — `lang` absent, `lang=en`, and `lang=zz` all render identical English output.
+- **AC-13** — Switching the language issues no write request, and reloading the page or opening the same URL in another browser reproduces the same displayed language.
 </content>

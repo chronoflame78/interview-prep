@@ -4,28 +4,15 @@ import { tables } from "turndown-plugin-gfm";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getQuestionsForUser } from "@/lib/questions";
+// Shared with the card view so the file and the screen use one fallback rule.
+import {
+  CONTENT_LANG_LABELS,
+  normalizeLang,
+  pickVariant,
+  type ContentLang,
+} from "@/lib/language";
 import type { Difficulty } from "@/generated/prisma/enums";
 import type { QuestionFilters, QuestionWithRelations } from "@/types";
-
-const LANGS = ["en", "vn", "cus"] as const;
-type ExportLang = (typeof LANGS)[number];
-
-const LANG_LABELS: Record<ExportLang, string> = {
-  en: "English",
-  vn: "Vietnamese",
-  cus: "Custom",
-};
-
-function pickVariant(q: QuestionWithRelations, lang: ExportLang) {
-  // Fall back to English when the requested variant is empty
-  const question =
-    (lang === "vn" ? q.questionVn : lang === "cus" ? q.questionCus : null) ||
-    q.question;
-  const answer =
-    (lang === "vn" ? q.answerVn : lang === "cus" ? q.answerCus : null) ||
-    q.answer;
-  return { question, answer };
-}
 
 function difficultyLabel(d: Difficulty) {
   return d.charAt(0) + d.slice(1).toLowerCase();
@@ -33,14 +20,14 @@ function difficultyLabel(d: Difficulty) {
 
 function buildMarkdown(
   questions: QuestionWithRelations[],
-  lang: ExportLang,
+  lang: ContentLang,
   includeAnswers: boolean,
   turndown: TurndownService
 ) {
   const lines: string[] = [
     `# Interview Questions (${questions.length})`,
     "",
-    `_Language: ${LANG_LABELS[lang]} · Exported: ${new Date().toISOString().slice(0, 10)}_`,
+    `_Language: ${CONTENT_LANG_LABELS[lang]} · Exported: ${new Date().toISOString().slice(0, 10)}_`,
     "",
   ];
 
@@ -92,10 +79,7 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const langParam = searchParams.get("lang");
-  const lang: ExportLang = LANGS.includes(langParam as ExportLang)
-    ? (langParam as ExportLang)
-    : "en";
+  const lang = normalizeLang(searchParams.get("lang"));
   const includeAnswers = searchParams.get("answers") !== "false";
 
   const filters: QuestionFilters = {

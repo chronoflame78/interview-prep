@@ -23,7 +23,13 @@ export default async function AdminQuestionsPage() {
       relatedTo: {
         include: {
           toQuestion: {
-            select: { id: true, question: true, difficulty: true },
+            select: {
+              id: true,
+              question: true,
+              questionVn: true,
+              questionCus: true,
+              difficulty: true,
+            },
           },
         },
       },

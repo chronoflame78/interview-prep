@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QuestionLanguageSelect } from "./language-select";
 import { DIFFICULTIES } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
@@ -128,6 +129,8 @@ export function QuestionFilters() {
           <SelectItem value="difficulty:desc">Hard to Easy</SelectItem>
         </SelectContent>
       </Select>
+
+      <QuestionLanguageSelect />
 
       <Button
         variant={importantOnly ? "secondary" : "outline"}

@@ -21,6 +21,8 @@ export type QuestionWithRelations = {
     toQuestion: {
       id: string;
       question: string;
+      questionVn: string | null;
+      questionCus: string | null;
       difficulty: Difficulty;
     };
   }[];

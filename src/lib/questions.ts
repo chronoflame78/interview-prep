@@ -22,7 +22,13 @@ export async function getQuestionsForUser(
         relatedTo: {
           include: {
             toQuestion: {
-              select: { id: true, question: true, difficulty: true },
+              select: {
+                id: true,
+                question: true,
+                questionVn: true,
+                questionCus: true,
+                difficulty: true,
+              },
             },
           },
         },
@@ -131,7 +137,13 @@ export async function getQuestionForUser(userId: string, questionId: string) {
         relatedTo: {
           include: {
             toQuestion: {
-              select: { id: true, question: true, difficulty: true },
+              select: {
+                id: true,
+                question: true,
+                questionVn: true,
+                questionCus: true,
+                difficulty: true,
+              },
             },
           },
         },

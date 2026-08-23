@@ -52,10 +52,10 @@
 - **Expected:** D1 and P1 present; P2 absent.
 
 ### TC-Q07 — Expand a card to read the answer
-- **Requirements:** Q-R41, R42
+- **Requirements:** Q-R41, R42, R64
 - **Level:** E2E
 - **Steps:** On `/questions`, click "More" on a question that has an answer.
-- **Expected:** The answer block appears under an "ANSWER" label; the question body is no longer line-clamped; the button reads "Less".
+- **Expected:** The answer block appears under an "ANSWER" label, in the language the selector currently shows; the question body is no longer line-clamped; the button reads "Less".
 
 ### TC-Q08 — Star a question
 - **Requirements:** Q-R47, R48, R49 · AC-7
@@ -334,14 +334,130 @@
 ### TC-Q51 — Display preferences reset on navigation
 - **Requirements:** Q-X14
 - **Level:** E2E
-- **Steps:** Change width and font, navigate to `/topics`, navigate back.
-- **Expected:** Both are back at their defaults. Documents that these are not persisted.
+- **Steps:** Set width, font, **and** language to non-defaults; navigate to `/topics`; navigate back to `/questions`.
+- **Expected:** Width and font are back at their defaults — they are not persisted. The language is back at English too, because the return navigation drops the query string; following a link that carries `?lang=vn` restores it (contrast with TC-Q75).
 
 ### TC-Q52 — Code blocks are highlighted
 - **Requirements:** Q-R46
 - **Level:** Unit (component)
 - **Steps:** Render `HighlightedHtml` with content containing `<pre><code class="language-sql">SELECT 1</code></pre>` and with a `<pre><code>` that has no language class.
 - **Expected:** Both gain the `hljs` class and tokenized spans; the class-less one is highlighted as TypeScript (the configured default).
+
+## Language display
+
+> Every case below is written against a runner that does not exist yet (see *Existing automated
+> tests*). TC-Q73 and TC-Q87 are pure-function tests needing nothing but Vitest; the component cases
+> would additionally need `@testing-library/react` plus a `next/navigation` stub; the E2E cases need
+> Playwright.
+
+### TC-Q70 — The selector renders once per reading surface
+- **Requirements:** Q-R59, R62, R63
+- **Level:** E2E
+- **Steps:** Open `/questions`, `/admin/questions` (as `ADMIN`), and `/share/<slug>`.
+- **Expected:** Exactly one language control on each page, offering English / Vietnamese / Custom with English selected. On `/questions` it sits in the filter row after Sort; on the other two it sits in the card-list toolbar after the width buttons. `/questions` must **not** show a second copy in its toolbar.
+
+### TC-Q71 — Switching language re-renders the cards with no server request
+- **Requirements:** Q-R59, R64 · AC-13
+- **Level:** E2E
+- **Preconditions:** A question with Vietnamese question and answer text, expanded.
+- **Steps:** Record network activity, then select "Vietnamese".
+- **Expected:** The URL becomes `?lang=vn`; the question body and the expanded answer switch to Vietnamese; **no** request is issued — no RSC payload fetch and no write of any kind.
+
+### TC-Q72 — English fallback is per field
+- **Requirements:** Q-R65, R30 · AC-11
+- **Level:** Unit (component)
+- **Preconditions:** Q1 has `questionVn` and `answerVn`; Q2 has `questionVn` but `answerVn = null`; Q3 has neither.
+- **Steps:** Render the list with `lang = "vn"`, all cards expanded.
+- **Expected:** Q1 fully Vietnamese; Q2 Vietnamese question with the **English** answer; Q3 fully English. No card is blank and no card mixes a fallback marker into the text.
+
+### TC-Q73 — `normalizeLang` accepts only the three known values
+- **Requirements:** Q-R60 · AC-12
+- **Level:** Unit
+- **Steps:** Call `normalizeLang` with `"en"`, `"vn"`, `"cus"`, `"zz"`, `""`, `null`, `undefined`, `"VN"`.
+- **Expected:** `"vn"` and `"cus"` pass through; everything else — including the uppercase `"VN"` — returns `"en"`.
+
+### TC-Q74 — The URL is written like the other filter controls
+- **Requirements:** Q-R60, R62
+- **Level:** Unit (component)
+- **Steps:** With `?difficulty=HARD&page=2` in the URL, select Vietnamese, then select English again.
+- **Expected:** First write produces `?difficulty=HARD&lang=vn` — `page` dropped, `difficulty` preserved. Selecting English **removes** `lang` rather than writing `lang=en`. Both go through `history.pushState`, not `router.push`.
+
+### TC-Q75 — The selection is shareable and survives a refresh
+- **Requirements:** Q-R61 · AC-13
+- **Level:** E2E
+- **Steps:** Select Custom, copy the URL, reload; then open the same URL in a different browser profile.
+- **Expected:** Both show the Custom variant with the control reading "Custom". Nothing was written to the database — the second profile is a different user and still sees Custom.
+
+### TC-Q76 — Back and forward restore the previous language
+- **Requirements:** Q-R61
+- **Level:** E2E
+- **Steps:** From English select Vietnamese, then Custom, then press Back twice and Forward once.
+- **Expected:** The cards render Vietnamese, then English, then Vietnamese again, and the control label tracks each step — `pushState` created real history entries.
+
+### TC-Q77 — A request carrying `?lang=vn` renders Vietnamese server-side
+- **Requirements:** Q-R61
+- **Level:** E2E
+- **Steps:** Request `/questions?lang=vn` cold and inspect the initial HTML before hydration.
+- **Expected:** The Vietnamese text is already in the server-rendered markup; there is no English-then-Vietnamese flash on hydration.
+
+### TC-Q78 — The selection is display-only
+- **Requirements:** Q-R66
+- **Level:** Integration + E2E
+- **Preconditions:** Filters applied (`difficulty=HARD&sort=difficulty:asc`), and a question whose Vietnamese text would not match the active search term.
+- **Steps:** Capture the ordered list of card ids at `lang=en`, then switch to Vietnamese and capture again.
+- **Expected:** Identical ids in identical order, including the question whose Vietnamese text does not match the search. `getQuestionsForUser` is never called with a `lang` argument.
+
+### TC-Q79 — A customized default shows the user's own variant
+- **Requirements:** Q-R67 · Q-R4
+- **Level:** Integration + E2E
+- **Preconditions:** Default D has `questionVn = "goc"`. User A overrides `questionVn = "cua toi"`. User B has no override.
+- **Steps:** Both users open `/questions?lang=vn`.
+- **Expected:** A sees "cua toi" with the "Customized" badge; B sees "goc". The variant is picked after the override merge, not from the raw row.
+
+### TC-Q80 — Related-question titles follow the language
+- **Requirements:** Q-R69
+- **Level:** Integration + E2E
+- **Preconditions:** A links to B; B has `questionVn`; A links to C, which has no `questionVn`.
+- **Steps:** At `lang=vn`, expand A. Separately, assert every read path that builds `relatedTo` returns the new fields.
+- **Expected:** B's title is Vietnamese, C's title falls back to English, and clicking either still focuses the target card (TC-Q49 unaffected). All five `toQuestion` selects — `getQuestionsForUser`, `getQuestionForUser`, `/admin/questions`, `POST /api/questions`, `PUT /api/questions/[id]` — include `questionVn` and `questionCus`; none returns `undefined` for them.
+
+### TC-Q81 — Editing and mutating from a non-English view
+- **Requirements:** Q-R68
+- **Level:** E2E
+- **Steps:** At `?lang=vn`, star a card, then click its pencil, save, and finally delete another card.
+- **Expected:** The star toggles as usual. The editor opens with all three tabs and English selected first — the display language does not change the editor. `returnTo` carries `lang=vn`, so saving lands back on the Vietnamese view. Delete and override-reset dispatch exactly as at `lang=en`.
+
+### TC-Q82 — Search does not follow the displayed language
+- **Requirements:** Q-X18
+- **Level:** Integration
+- **Preconditions:** Q1's Custom text contains "bao dong" and nothing else does; Q1's English text contains "closure".
+- **Steps:** At `lang=cus`, search "bao dong". Then search "closure".
+- **Expected:** "bao dong" returns **nothing** — Custom variants are not searched. "closure" returns Q1, displayed in Custom, even though the visible text does not contain the term. Pins the documented mismatch.
+
+### TC-Q83 — The export language is chosen separately
+- **Requirements:** Q-X19
+- **Level:** E2E
+- **Steps:** With the screen at `?lang=vn`, open the export menu and choose "Questions & answers → English".
+- **Expected:** The request is `...&lang=en` — the button's own choice overwrites the `lang` already in the query string — and the file is English while the page stays Vietnamese.
+
+### TC-Q84 — A shared link can carry a language
+- **Requirements:** Q-X20
+- **Level:** E2E
+- **Steps:** Open `/share/<slug>?lang=vn` as a different user, then `/share/<slug>` with no parameter.
+- **Expected:** The first renders the owner's collection in Vietnamese; the second renders English regardless of what the owner last selected, since nothing is stored per user.
+
+### TC-Q85 — A whitespace-only variant does not fall back
+- **Requirements:** Q-X21
+- **Level:** Unit (component)
+- **Preconditions:** A question with `questionVn = "<p></p>"`.
+- **Steps:** Render at `lang = "vn"`.
+- **Expected:** The card body renders **blank** rather than falling back to English — `pickVariant` tests for nullish/empty, not for empty markup. Pins the behavior; mirrors Q-V3 on the write side.
+
+### TC-Q86 — The card and the export agree on the fallback
+- **Requirements:** Q-R65, R55
+- **Level:** Unit
+- **Steps:** Run `pickVariant` over a table of fixtures — variant present, variant `null`, variant `""`, answer present with question missing, and the reverse — for all three languages.
+- **Expected:** One shared implementation in `src/lib/language.ts` produces the export's documented results (TC-Q53) and the card's (TC-Q72). A change to the rule cannot move one surface without the other.
 
 ## Export cases
 
@@ -378,10 +494,10 @@
 - **Expected:** Single-line → `## Question 1. <text>`; multi-line → `## Question 2.` followed by the body on subsequent lines.
 
 ### TC-Q58 — Invalid `lang` parameter
-- **Requirements:** Q-R52
+- **Requirements:** Q-R52, Q-R60
 - **Level:** Integration
 - **Steps:** `GET /api/questions/export?lang=fr`.
-- **Expected:** Falls back to `en`; the filename contains `-en-`.
+- **Expected:** Falls back to `en`; the filename contains `-en-`. The export and the card view share `normalizeLang`, so both treat an unrecognized value identically (see TC-Q73, TC-Q84).
 
 ### TC-Q59 — Client-side download wiring
 - **Requirements:** Q-R53, R58
@@ -463,6 +579,10 @@
 | Export forcing `page: 1, limit: MAX` | Losing it truncates exports to 50 with no visible error | TC-Q55 |
 | `useEffect` listener cleanup in `QuestionCard` | Leaks `hashchange` / `question:focus` listeners per card | TC-Q49 |
 | Difficulty rank map | Reverting to enum ordering silently changes sort output | TC-Q25 |
+| Shared `pickVariant` | One helper now feeds the cards and the export; changing the fallback rule moves both surfaces at once, and a "fix" for one silently rewrites exported files | TC-Q86, TC-Q72, TC-Q53 |
+| Shallow `pushState` in the language selector | Regressing to `router.push` reintroduces a full read pass per switch; if `useSearchParams` stops syncing with `pushState`, the control updates the URL while the cards silently keep the old language | TC-Q71, TC-Q76 |
+| The five widened `toQuestion` selects | Missing one leaves `questionVn`/`questionCus` `undefined` on that path only, so related titles fall back to English in one view and not another | TC-Q80 |
+| `lang` staying out of `QuestionFilters` | Passing it into `getQuestionsForUser` would turn a display toggle into a filter and change result sets | TC-Q78 |
 
 ## Recommended missing coverage
 
@@ -487,4 +607,7 @@ Ordered by value, given that nothing is currently tested:
 8. **No coverage exists for `/admin/questions`**, which duplicates the read logic and hard-codes
    `hasOverride: false` (Q-X16). A test comparing it against `getQuestionsForUser` output for the same
    admin would expose the divergence.
+9. **`normalizeLang` and `pickVariant` are the cheapest tests in this document** (TC-Q73, TC-Q86):
+   pure functions, no DOM, no Prisma, no network. If exactly one test file is ever added for this
+   feature, make it that one — it guards the card and the export at the same time.
 </content>

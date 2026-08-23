@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AArrowDown, AArrowUp, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuestionCard } from "./question-card";
+import { QuestionLanguageSelect } from "./language-select";
 import type { QuestionWithRelations } from "@/types";
 
 const WIDTH_STEPS = ["100%", "900px", "700px"] as const;
@@ -15,9 +16,16 @@ interface QuestionListProps {
   questions: QuestionWithRelations[];
   readOnly?: boolean;
   isAdmin?: boolean;
+  /** Pages whose filter bar already carries the control pass `false`. */
+  showLanguageSelect?: boolean;
 }
 
-export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps) {
+export function QuestionList({
+  questions,
+  readOnly,
+  isAdmin,
+  showLanguageSelect = true,
+}: QuestionListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const filteringImportant = searchParams.get("important") === "1";
@@ -111,6 +119,13 @@ export function QuestionList({ questions, readOnly, isAdmin }: QuestionListProps
         >
           <Maximize2 className="h-4 w-4" />
         </Button>
+
+        {showLanguageSelect && (
+          <>
+            <div className="bg-border mx-1 h-4 w-px" />
+            <QuestionLanguageSelect />
+          </>
+        )}
       </div>
 
       <div className="mx-auto space-y-3" style={{ maxWidth: WIDTH_STEPS[widthIndex] }}>

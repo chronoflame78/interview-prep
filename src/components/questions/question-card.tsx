@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { DifficultyBadge } from "./difficulty-badge";
 import { HighlightedHtml } from "@/components/ui/highlighted-html";
+import { pickTitle, pickVariant } from "@/lib/language";
+import { useDisplayLanguage } from "@/lib/use-display-language";
 import { cn } from "@/lib/utils";
 import type { QuestionWithRelations } from "@/types";
 
@@ -37,6 +39,10 @@ export function QuestionCard({
   const [expanded, setExpanded] = useState(false);
   const [important, setImportant] = useState(question.isImportant);
   const [starPending, setStarPending] = useState(false);
+
+  // Display language comes from the URL; each field falls back to English.
+  const lang = useDisplayLanguage();
+  const { question: body, answer } = pickVariant(question, lang);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -112,7 +118,7 @@ export function QuestionCard({
             </div>
             <div className={`${fontSize} leading-relaxed`}>
               <HighlightedHtml
-                html={question.question}
+                html={body}
                 className={cn(
                   "prose dark:prose-invert max-w-none",
                   !expanded && "line-clamp-3"
@@ -168,14 +174,14 @@ export function QuestionCard({
         </div>
       </CardHeader>
 
-      {expanded && question.answer && (
+      {expanded && answer && (
         <CardContent className="pt-0">
           <div className="bg-muted/50 rounded-md p-3">
             <p className="text-muted-foreground mb-1 text-xs font-medium uppercase">
               Answer
             </p>
             <HighlightedHtml
-              html={question.answer}
+              html={answer}
               className={`prose dark:prose-invert max-w-none ${fontSize}`}
             />
           </div>
@@ -205,7 +211,7 @@ export function QuestionCard({
                     difficulty={r.toQuestion.difficulty}
                   />
                   <span className="line-clamp-2 flex-1 group-hover:underline">
-                    {stripHtml(r.toQuestion.question)}
+                    {stripHtml(pickTitle(r.toQuestion, lang))}
                   </span>
                 </Link>
               </li>

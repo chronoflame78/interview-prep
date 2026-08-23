@@ -73,6 +73,7 @@ export default async function QuestionsPage({ searchParams }: Props) {
       <QuestionList
         questions={questions}
         isAdmin={session.user.role === "ADMIN"}
+        showLanguageSelect={false}
       />
     </div>
   );

@@ -51,3 +51,48 @@ export type QuestionFilters = {
   page?: number;
   limit?: number;
 };
+
+// ─── Study plans ───
+
+export type PlanSummary = {
+  id: string;
+  name: string;
+  description: string | null;
+  /** Visible items only — hidden/unavailable questions are not counted. */
+  questionCount: number;
+  groupCount: number;
+  updatedAt: Date;
+};
+
+export type PlanItemView = {
+  /** StudyPlanItem.id */
+  id: string;
+  questionId: string;
+  /** null when the question is not visible to the owner right now. */
+  question: QuestionWithRelations | null;
+};
+
+export type PlanSectionView = {
+  /** null = the built-in Ungrouped section. */
+  id: string | null;
+  name: string;
+  /** Ordered by position; hidden items are included as placeholders. */
+  items: PlanItemView[];
+};
+
+export type PlanView = {
+  id: string;
+  name: string;
+  description: string | null;
+  domainId: string | null;
+  /** The plan's domain is not the viewer's active domain. */
+  isForeignDomain: boolean;
+  /** Ungrouped first, then groups by position. */
+  sections: PlanSectionView[];
+};
+
+/** Body of PUT /api/plans/[id]/layout — the complete arrangement. */
+export type PlanLayout = {
+  ungrouped: string[];
+  groups: { id: string; itemIds: string[] }[];
+};

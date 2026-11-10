@@ -32,6 +32,7 @@ model User {
   createdTopics      Topic[]
   createdSubTopics   SubTopic[]
   interviewSessions  InterviewSession[]
+  studyPlans         StudyPlan[]
 }
 
 enum Role {
@@ -87,6 +88,7 @@ model Domain {
   questions Question[]
   users     User[]             @relation("ActiveDomain")
   interviewSessions InterviewSession[]
+  studyPlans        StudyPlan[]
 }
 
 model Topic {
@@ -145,6 +147,7 @@ model Question {
   overrides      UserQuestionOverride[]
   stars          UserQuestionStar[]
   interviewTurns InterviewTurn[]
+  studyPlanItems StudyPlanItem[]
   relatedTo      QuestionRelation[]     @relation("RelatedFrom")
   relatedFrom    QuestionRelation[]     @relation("RelatedTo")
 
@@ -274,4 +277,56 @@ model InterviewTurn {
 enum TurnType {
   DB_QUESTION
   AI_FOLLOWUP
+}
+
+// ─── Study Plan Models ───
+
+// A user's own ordered, grouped list of existing questions. Plans reference
+// questions by id only; content is always resolved through the normal read
+// path (overrides, visibility), never copied.
+model StudyPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  domainId    String?
+  name        String
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain Domain?          @relation(fields: [domainId], references: [id], onDelete: SetNull)
+  groups StudyPlanGroup[]
+  items  StudyPlanItem[]
+
+  @@index([userId, domainId, updatedAt])
+}
+
+model StudyPlanGroup {
+  id        String   @id @default(cuid())
+  planId    String
+  name      String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  plan  StudyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  items StudyPlanItem[]
+
+  @@index([planId, position])
+}
+
+model StudyPlanItem {
+  id         String   @id @default(cuid())
+  planId     String
+  groupId    String? // null = the built-in "Ungrouped" section
+  questionId String
+  position   Int // order within its section
+  createdAt  DateTime @default(now())
+
+  plan     StudyPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  group    StudyPlanGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  question Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, questionId])
+  @@index([planId, groupId, position])
 }
